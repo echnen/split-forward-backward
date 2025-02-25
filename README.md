@@ -11,12 +11,12 @@ python3 main.py
 
 If you find this code useful, please cite the above-mentioned paper:
 ```BibTeX
-@article{bcf24,
+@article{acgn25,
   author = {Åkerman, Antom and Chenchene, Enis and Giselsson, Pontus and Naldi, Emanuele},
   title = {Characterization of Nonexpansive Forward--Backward-type Algorithms with Minimal Memory Requirements},
   pages = {xxxx.yyyyy},
   journal = {ArXiv},
-  year = {2024}
+  year = {2025}
 }
 ```
 
