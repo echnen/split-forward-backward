@@ -1,4 +1,4 @@
-# Generalized Fast Krasnoselskii-Mann Method with Preconditioners: Example code
+# Characterization of Nonexpansive Forward-Backward-type Algorithms with Minimal Memory: Example code
 
 This repository contains the experimental source code to reproduce the numerical experiments in:
 
