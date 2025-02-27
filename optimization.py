@@ -80,6 +80,75 @@ def DFB(Proxs, Grads, betas, w_init, maxit, tau, data):
 
     return Vars, Objs
 
+def F_heuristic(f, b, betas):
+    """Heuristic for finding F, accounting for cocoercivity-constants beta.
+    Tries to make sure sum is equal for the cocoercive operators
+    between each pair of consecutive resolvents
+    """
+    F = [0]
+    beta_sum = 0
+    tot_beta = sum(betas)
+    b_left = b-1
+    for i in range(f):
+        if abs(beta_sum-tot_beta/(b_left)) <= abs(beta_sum+betas[i]-tot_beta/(b_left)):
+            F.append(i)
+            beta_sum = betas[i]
+        else:
+            beta_sum += betas[i]
+    F = F + [f]*(b-len(F))
+    F[-1] = f
+    return F
+
+    #return F
+
+def DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, data, heuristic = False):
+    '''
+    Implements the Distributed Forward Backward (DFB) Method, introduced in
+    Section REF, with H and K matrices minimizing \|W\|_2. 
+    Heuristic determines if heristic is used to generate F. If False, splits evenly.   
+    '''
+
+    # retrieving information
+    f = len(Grads)
+    b = len(Proxs)
+    dim = data['dim']; A = data['A']; y = data['y']; Anchors = data['Anchors']
+    delta_1 = data['delta_1']; delta_2 = data['delta_2']
+
+    # storage
+    Vars = np.zeros(maxit)
+    Objs = np.zeros(maxit)
+
+    if heuristic:
+        F = F_heuristic(f, b, betas)
+    else:
+        F = [0] + [f//(b-1)*i for i in range(1,b-1)]+  [f]
+
+    N, K = st.create_N_and_K_optimized(F, f, b,np.diag(betas))
+    
+
+    Lap =  b * np.eye(b) - np.ones(b)
+
+    sLap =  0 * Lap
+    J = op.genFBO(tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F)
+
+    w = np.copy(w_init)
+    for k in range(maxit):
+
+        # step
+        w, x = J.apply(w)
+        mean_x = np.mean(x, axis=0)
+
+        # compute objective value
+        obj = st.fobj_exp1(mean_x, A, y, Anchors, delta_1, delta_2)
+        Objs[k] = obj
+
+        # computing variance
+        var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
+        Vars[k] = var
+
+    return Vars, Objs
+
+
 
 def ACL24(Proxs, Grads, betas, w_init, maxit, tau, data):
     '''

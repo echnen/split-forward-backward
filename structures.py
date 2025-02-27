@@ -35,6 +35,7 @@ Minimal Memory Requirements,
 """
 
 import numpy as np
+import cvxpy as cp
 
 
 def soft(tau, w):
@@ -183,6 +184,29 @@ def create_N_and_K_DFB(f, b):
         F.append(max(index, F[-1]))
 
     return N, K, F
+
+def create_N_and_K_optimized(F, f, b, beta_diag):
+    #Chooses N and K to minimize 2-norm sqrt(beta_diag)*(H.T-K)
+    #Inputs:
+    #F: (m,n)-nondecreasing vector defining order.
+    #f, b : Number of forward/backward evaluations
+    #beta_diag: Diagonal matrix of beta-values
+    K = cp.Variable((f,b))
+    N = cp.Variable((b,f))
+    constraints =[K@np.ones((b,1)) == np.ones((f,1)),
+                  N.T@np.ones((b,1)) == np.ones((f,1))]
+    
+    for i in range(b):
+        for j in range(f):
+            if j >= F[i]:
+                constraints.append(N[i,j] == 0)
+            else:
+                constraints.append(K[j,i] == 0)
+
+    prob = cp.Problem(cp.Minimize(cp.norm2(np.sqrt(beta_diag)@(N.T-K))), constraints)
+    prob.solve(solver = cp.MOSEK,verbose = False)
+    
+    return N.value, K.value
 
 
 def create_N_and_K_ACL24(f, b):

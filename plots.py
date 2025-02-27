@@ -158,8 +158,8 @@ def plot_experiment_1(Vars_pp, Vars_pn, Vars_np, Vars_nn,
     plt.show()
 
 
-def plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-                      Objs_DFB, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+def plot_experiment_2_optimized(Vars_DFB, Vars_DFB_opt,Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
+                      Objs_DFB,Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
                       hetereogenity, maxit):
 
     maxit, cases = Vars_DFB.shape
@@ -169,6 +169,8 @@ def plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
 
     # plotting all data
     plt.semilogy(Vars_DFB, color='k', alpha=.1)
+    plt.semilogy(Vars_DFB_opt, color='y', alpha=.1)
+
     plt.semilogy(Vars_ACL24, color='r', alpha=.1)
     plt.semilogy(Vars_AMTT23, color='b', alpha=.1)
     plt.semilogy(Vars_BCLN23, color='g', alpha=.1)
@@ -176,6 +178,9 @@ def plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
     # plotting averages
     plt.semilogy(gmean(Vars_DFB, axis=1)[gmean(Vars_DFB, axis=1) > 0],
                  linewidth=3, color='k', alpha=1)
+    plt.semilogy(gmean(Vars_DFB_opt, axis=1)[gmean(Vars_DFB_opt, axis=1) > 0],
+                 linewidth=3, color='y', alpha=1)
+
     plt.semilogy(gmean(Vars_ACL24, axis=1)[gmean(Vars_ACL24, axis=1) > 0],
                  linewidth=3, color='r', alpha=1)
     plt.semilogy(gmean(Vars_AMTT23, axis=1)[gmean(Vars_AMTT23, axis=1) > 0],
@@ -198,11 +203,13 @@ def plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
     # plotting objectives
     plt.figure(figsize=(5, 5))
 
-    min_obj = min(np.min(Objs_DFB), np.min(Objs_ACL24),
+    min_obj = min(np.min(Objs_DFB), np.min(Objs_DFB_opt),np.min(Objs_ACL24),
                   np.min(Objs_AMTT23), np.min(Objs_BCLN23))
 
     # plotting all data
     plt.semilogy(Objs_DFB - min_obj, color='k', alpha=.1)
+    plt.semilogy(Objs_DFB_opt - min_obj, color='y', alpha=.1)
+
     plt.semilogy(Objs_ACL24 - min_obj, color='r', alpha=.1)
     plt.semilogy(Objs_AMTT23 - min_obj, color='b', alpha=.1)
     plt.semilogy(Objs_BCLN23 - min_obj, color='g', alpha=.1)
@@ -211,6 +218,102 @@ def plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
     if hetereogenity == 1:
         plt.semilogy(gmean(Objs_DFB - min_obj, axis=1),
                      linewidth=3, color='k', alpha=1)
+        plt.semilogy(gmean(Objs_DFB_opt - min_obj, axis=1),
+                linewidth=3, color='y', alpha=1)
+
+        plt.semilogy(gmean(Objs_ACL24 - min_obj, axis=1),
+                     linewidth=3, color='r', alpha=1)
+        plt.semilogy(gmean(Objs_AMTT23 - min_obj, axis=1),
+                     linewidth=3,  color='b', alpha=1)
+        plt.semilogy(gmean(Objs_BCLN23 - min_obj, axis=1),
+                     linewidth=3, color='g', alpha=1)
+
+    else:
+        plt.semilogy(gmean(Objs_DFB - min_obj, axis=1),
+                     linewidth=3, color='k', alpha=1, label='DFB')
+        plt.semilogy(gmean(Objs_DFB_opt - min_obj, axis=1),
+                     linewidth=3, color='y', alpha=1, label='DFB_opt')
+        plt.semilogy(gmean(Objs_ACL24 - min_obj, axis=1),
+                     linewidth=3, color='r', alpha=1, label='ACL24')
+        plt.semilogy(gmean(Objs_AMTT23 - min_obj, axis=1),
+                     linewidth=3, color='b', alpha=1, label='AMTT23')
+        plt.semilogy(gmean(Objs_BCLN23 - min_obj, axis=1),
+                     linewidth=3, color='g', alpha=1, label='BCLN23')
+
+    plt.ylabel(r'$f(x^k) - \min \ f$')
+    plt.xlabel(r'Iteration number $(k)$')
+    plt.xlim(0, maxit - 50)
+    plt.grid()
+
+    if hetereogenity != 1:
+        plt.legend()
+
+    if hetereogenity == 1:
+        plt.savefig('results/experiment_2_2_1.pdf', bbox_inches='tight')
+    else:
+        plt.savefig('results/experiment_2_2_2.pdf', bbox_inches='tight')
+
+    plt.show()
+
+
+
+def plot_experiment_2(Vars_DFB,Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
+                      Objs_DFB, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+                      hetereogenity, maxit):
+
+    maxit, cases = Vars_DFB.shape
+
+    # plotting variances
+    plt.figure(figsize=(5, 5))
+
+    # plotting all data
+    plt.semilogy(Vars_DFB, color='k', alpha=.1)
+
+    plt.semilogy(Vars_ACL24, color='r', alpha=.1)
+    plt.semilogy(Vars_AMTT23, color='b', alpha=.1)
+    plt.semilogy(Vars_BCLN23, color='g', alpha=.1)
+
+    # plotting averages
+    plt.semilogy(gmean(Vars_DFB, axis=1)[gmean(Vars_DFB, axis=1) > 0],
+                 linewidth=3, color='k', alpha=1)
+
+    plt.semilogy(gmean(Vars_ACL24, axis=1)[gmean(Vars_ACL24, axis=1) > 0],
+                 linewidth=3, color='r', alpha=1)
+    plt.semilogy(gmean(Vars_AMTT23, axis=1)[gmean(Vars_AMTT23, axis=1) > 0],
+                 linewidth=3, color='b', alpha=1)
+    plt.semilogy(gmean(Vars_BCLN23, axis=1)[gmean(Vars_BCLN23, axis=1) > 0],
+                 linewidth=3, color='g', alpha=1)
+
+    plt.ylabel('Variance')
+    plt.xlabel(r'Iteration number $(k)$')
+    plt.xlim(0, maxit - 50)
+    plt.grid()
+    if hetereogenity == 1:
+        plt.savefig('results/experiment_2_1_1.pdf', bbox_inches='tight')
+    else:
+        plt.savefig('results/experiment_2_1_2.pdf', bbox_inches='tight')
+
+    plt.show()
+
+
+    # plotting objectives
+    plt.figure(figsize=(5, 5))
+
+    min_obj = min(np.min(Objs_DFB),np.min(Objs_ACL24),
+                  np.min(Objs_AMTT23), np.min(Objs_BCLN23))
+
+    # plotting all data
+    plt.semilogy(Objs_DFB - min_obj, color='k', alpha=.1)
+
+    plt.semilogy(Objs_ACL24 - min_obj, color='r', alpha=.1)
+    plt.semilogy(Objs_AMTT23 - min_obj, color='b', alpha=.1)
+    plt.semilogy(Objs_BCLN23 - min_obj, color='g', alpha=.1)
+
+    # plotting averages
+    if hetereogenity == 1:
+        plt.semilogy(gmean(Objs_DFB - min_obj, axis=1),
+                     linewidth=3, color='k', alpha=1)
+
         plt.semilogy(gmean(Objs_ACL24 - min_obj, axis=1),
                      linewidth=3, color='r', alpha=1)
         plt.semilogy(gmean(Objs_AMTT23 - min_obj, axis=1),
@@ -286,7 +389,7 @@ def plot_experiment_3(Vars, Objs, Lams, cases, maxit):
     plt.show()
 
 
-def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit):
+def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit, outliers = [5,9]):
 
     # plotting variances
     plt.subplots(figsize=(5, 5))
@@ -303,8 +406,9 @@ def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit):
         plt.semilogy(Vars[:, f - 1, :], color=color, alpha=0.3)
 
     # plotting outliers
-    plt.semilogy(Vars[:, 5, 2], color='r', linewidth=3, alpha=1)
-    plt.semilogy(Vars[:, 9, 2], color='m', linewidth=3, alpha=1)
+    plt.semilogy(Vars[:, outliers[0], 2], color='r', linewidth=3, alpha=1)
+    plt.semilogy(Vars[:, outliers[1], 2], color='m', linewidth=3, alpha=1)
+
 
     plt.ylabel('Variance')
     plt.xlabel(r'Iteration number $(k)$')
@@ -321,8 +425,8 @@ def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit):
         plt.semilogy(Objs[:, f - 1, :] - np.min(Objs), color=color, alpha=0.3)
 
     # plotting outliers
-    plt.semilogy(Objs[:, 5, 2] - np.min(Objs), color='r', linewidth=3, alpha=1)
-    plt.semilogy(Objs[:, 9, 2] - np.min(Objs), color='m', linewidth=3, alpha=1)
+    plt.semilogy(Objs[:, outliers[0], 2] - np.min(Objs), color='r', linewidth=3, alpha=1)
+    plt.semilogy(Objs[:, outliers[1], 2] - np.min(Objs), color='m', linewidth=3, alpha=1)
 
     plt.ylabel(r'$f(x^k) - \min \ f$')
     plt.xlabel(r'Iteration number $(k)$')
@@ -338,13 +442,13 @@ def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit):
     # plotting m vs \|W\|
     for f in range(m):
         for cs in range(cases):
-            if f == 5 and cs == 2:
+            if f == outliers[0] and cs == 2:
                 plt.scatter(f, Spects[f, cs], s=70, color='k')
                 plt.scatter(f, Spects[f, cs], s=50, color='r')
 
-            elif f == 9 and cs == 2:
-                plt.scatter(9, Spects[9, 2], s=70, color='k')
-                plt.scatter(9, Spects[9, 2], s=50, color='m')
+            elif f == outliers[1] and cs == 2:
+                plt.scatter(f, Spects[f, 2], s=70, color='k')
+                plt.scatter(f, Spects[f, 2], s=50, color='m')
 
 
             else:

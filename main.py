@@ -47,11 +47,16 @@ if __name__ == '__main__':
     print('Running Experiment 1:\nTesting whether having negative' +
           ' (reflected-type) step sizes enhance the performance of the method.')
     exp.experiment_1(maxit=1000)
-
+    
     print('Running Experiment 2:\nTesting againts other instances in' +
           'the literature.')
     exp.experiment_2(hetereogenity=1, maxit=500)
     exp.experiment_2(hetereogenity=10, maxit=500)
+
+    print('Running Experiment 2:\nTesting againts other instances in' +
+          'the literature.')
+    exp.experiment_2_optimized(hetereogenity=1, maxit=500,heuristic=False)
+    exp.experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False)
 
     print('Running Experiment 3:\nTesting randomly generated FB methods' +
           'with different H and K and studying the influence of ||W||.')
@@ -59,4 +64,9 @@ if __name__ == '__main__':
 
     print('Running Experiment 4:\nTesting if the number of forward terms' +
           ' influences the optimization performances.')
-    exp.experiment_4(maxit=200)
+    exp.experiment_4(maxit=100)
+
+    print('Running Experiment 4 but optimized:\nTesting if the number of forward terms' +
+          ' influences the optimization performances.')
+    #exp.experiment_4(maxit=100)
+    exp.experiment_4_optimized(maxit=100, heuristic = False)
