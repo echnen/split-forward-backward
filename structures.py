@@ -38,7 +38,7 @@ import numpy as np
 import cvxpy as cp
 
 
-def soft(tau, w):
+def prox_norm_ell_2(tau, w):
 
     norm = np.linalg.norm(w)
 
@@ -48,22 +48,40 @@ def soft(tau, w):
         return max(0, 1 - tau / norm) * w
 
 
-def prox_abs_tilted(tau, w, tilt):
+def prox_norm_ell_1(tau, w):
+
+    return np.sign(w) * np.maximum(np.abs(w) - tau, 0)
+
+
+def prox_norm_ell_2_tilted(tau, w, tilt):
     '''
-    computes the proximity operator of |w - tilt|
+    computes the proximity operator of |w - tilt|_2
     '''
 
-    return tilt + soft(tau, w - tilt)
+    return tilt + prox_norm_ell_2(tau, w - tilt)
 
 
-def create_prox_function(s):
+def prox_norm_ell_1_tilted(tau, w, tilt):
+    '''
+    computes the proximity operator of |w - tilt|_1
+    '''
 
-    return lambda tau, w: prox_abs_tilted(tau, w, s)
+    return tilt + prox_norm_ell_1(tau, w - tilt)
+
+
+def create_prox_function_ell_2(s):
+
+    return lambda tau, w: prox_norm_ell_2_tilted(tau, w, s)
+
+
+def create_prox_function_ell_1(s):
+
+    return lambda tau, w: prox_norm_ell_1_tilted(tau, w, s)
 
 
 def create_Proxs(Anchors):
 
-    return [create_prox_function(anchor) for anchor in Anchors.T]
+    return [create_prox_function_ell_2(anchor) for anchor in Anchors.T]
 
 
 def create_grad_function(delta, A_j, y_j):
@@ -77,7 +95,9 @@ def create_grad_function_hub_flat(delta_1, delta_2, A_j, y_j):
 
 
 def create_Grads(delta, f, A, y):
-
+    '''
+    ####################### no longer used
+    '''
     m, dim = A.shape
 
     # splitting the forward terms into different chunks of balanced size
@@ -186,16 +206,22 @@ def create_N_and_K_DFB(f, b):
     return N, K, F
 
 def create_N_and_K_optimized(F, f, b, beta_diag):
-    #Chooses N and K to minimize 2-norm sqrt(beta_diag)*(H.T-K)
-    #Inputs:
-    #F: (m,n)-nondecreasing vector defining order.
-    #f, b : Number of forward/backward evaluations
-    #beta_diag: Diagonal matrix of beta-values
-    K = cp.Variable((f,b))
-    N = cp.Variable((b,f))
-    constraints =[K@np.ones((b,1)) == np.ones((f,1)),
-                  N.T@np.ones((b,1)) == np.ones((f,1))]
-    
+    '''
+    Chooses N and K to minimize 2-norm sqrt(beta_diag) * (H.T - K)
+
+    Parameters
+    ----------
+    F : (m,n)-nondecreasing vector defining order
+    f : number of forward evaluations
+    b : number of backward evaluations
+    beta_diag : diagonal matrix of beta-values
+    '''
+
+    K = cp.Variable((f, b))
+    N = cp.Variable((b, f))
+    constraints =[K @ np.ones((b, 1)) == np.ones((f, 1)),
+                  N.T @ np.ones((b, 1)) == np.ones((f, 1))]
+
     for i in range(b):
         for j in range(f):
             if j >= F[i]:
@@ -203,9 +229,10 @@ def create_N_and_K_optimized(F, f, b, beta_diag):
             else:
                 constraints.append(K[j,i] == 0)
 
-    prob = cp.Problem(cp.Minimize(cp.norm2(np.sqrt(beta_diag)@(N.T-K))), constraints)
-    prob.solve(solver = cp.MOSEK,verbose = False)
-    
+    prob = cp.Problem(cp.Minimize(cp.norm2(np.sqrt(beta_diag) @ (N.T - K))),
+                      constraints)
+    prob.solve(solver=cp.MOSEK, verbose=False)
+
     return N.value, K.value
 
 
@@ -334,7 +361,7 @@ def hub_flat(delta_1, delta_2, z):
 
     hub_flat(z) := sum_i h(z_i)
 
-    where h: R \to R is defined for all z_i \in R by:
+    where h: R to R is defined for all z_i in R by:
 
     h(z_i) :=
     0 if |z_i| <= delta_1
@@ -381,6 +408,9 @@ def dhub_flat(delta_1, delta_2, z):
 
 
 def fobj_exp2(x, A, y, Anchors, delta):
+    '''
+    #################### No longer used
+    '''
 
     fidelity = hub(delta, A @ x - y)
     non_smooth = np.sum(np.linalg.norm(x[:, np.newaxis] - Anchors, axis=0))
@@ -389,6 +419,9 @@ def fobj_exp2(x, A, y, Anchors, delta):
 
 
 def fobj_exp1(x, A, y, Anchors, delta_1, delta_2):
+    '''
+    #################### No longer used
+    '''
 
     fidelity = hub_flat(delta_1, delta_2, A @ x - y)
     non_smooth = np.sum(np.linalg.norm(x[:, np.newaxis] - Anchors, axis=0))

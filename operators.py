@@ -36,6 +36,7 @@ Minimal Memory Requirements,
 """
 
 import numpy as np
+import structures as st
 
 
 class genFBO:
@@ -82,3 +83,45 @@ class genFBO:
             x[i, :] = self.Proxs[i](self.tau / self.diag[i], in_prox_i)
 
         return w - self.Lap @ x, x
+
+
+class Model_Test:
+
+    def __init__(self, dim, A, y, Anchors, delta_1, delta_2):
+
+        self.dim = dim
+        self.A = A
+        self.y = y
+        self.Anchors = Anchors
+        self.delta_1 = delta_1
+        self.delta_2 = delta_2
+
+
+    def objective(self, x):
+
+        fidelity = st.hub_flat(self.delta_1, self.delta_2, self.A @ x - self.y)
+        non_smooth = np.sum(np.linalg.norm(x[:, np.newaxis] - self.Anchors,
+                                           axis=0))
+
+        return fidelity + non_smooth
+
+
+class Model_Portfolio:
+
+    def __init__(self, Cov, mean_rev, CB_data, dim, x_opt=0):
+
+        self.Cov = Cov
+        self.mean_rev = mean_rev
+        self.CB_data = CB_data
+        self.dim = dim
+        self.x_opt = x_opt
+
+
+    def objective(self, x):
+
+        return .5 * np.sum(x * (self.Cov @ x)) - np.sum(self.mean_rev * x)
+
+
+    def distance_to_solution(self, x):
+
+        return np.sum((x - self.x_opt) ** 2)

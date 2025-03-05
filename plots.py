@@ -159,8 +159,8 @@ def plot_experiment_1(Vars_pp, Vars_pn, Vars_np, Vars_nn,
 
 
 def plot_experiment_2_optimized(Vars_DFB, Vars_DFB_opt,Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-                      Objs_DFB,Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                      hetereogenity, maxit):
+                                Objs_DFB,Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+                                hetereogenity, maxit):
 
     maxit, cases = Vars_DFB.shape
 
@@ -254,7 +254,6 @@ def plot_experiment_2_optimized(Vars_DFB, Vars_DFB_opt,Vars_ACL24, Vars_AMTT23, 
         plt.savefig('results/experiment_2_2_2.pdf', bbox_inches='tight')
 
     plt.show()
-
 
 
 def plot_experiment_2(Vars_DFB,Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
@@ -459,4 +458,109 @@ def plot_experiment_4(m, cases, Vars, Objs, Spects, maxit, outliers = [5,9]):
     plt.ylabel(r'$\|W\|$')
     plt.grid()
     plt.savefig('results/experiment_4_3.pdf', bbox_inches='tight')
+    plt.show()
+
+
+def plot_experiment_portopt(Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
+                            Objs_DFB_one, Objs_DFB, Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+                            Dist_DFB_one, Dist_DFB, Dist_DFB_opt, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
+                            x_opt, maxit):
+
+    maxit, cases = Vars_DFB.shape
+
+    # plotting variances
+    plt.figure(figsize=(5, 5))
+
+    # plotting all data
+    plt.semilogy(Vars_DFB_one, color='c', alpha=.1)
+    plt.semilogy(Vars_DFB, color='k', alpha=.1)
+    plt.semilogy(Vars_DFB_opt, color='y', alpha=.1)
+    plt.semilogy(Vars_ACL24, color='r', alpha=.1)
+    plt.semilogy(Vars_AMTT23, color='b', alpha=.1)
+    plt.semilogy(Vars_BCLN23, color='g', alpha=.1)
+
+    # plotting averages
+    plt.semilogy(gmean(Vars_DFB, axis=1)[gmean(Vars_DFB, axis=1) > 0],
+                 linewidth=3, color='k', alpha=1)
+    plt.semilogy(gmean(Vars_DFB_one, axis=1)[gmean(Vars_DFB_one, axis=1) > 0],
+                 linewidth=3, color='c', alpha=1)
+    plt.semilogy(gmean(Vars_DFB_opt, axis=1)[gmean(Vars_DFB_opt, axis=1) > 0],
+                 linewidth=3, color='y', alpha=1)
+    plt.semilogy(gmean(Vars_ACL24, axis=1)[gmean(Vars_ACL24, axis=1) > 0],
+                 linewidth=3, color='r', alpha=1)
+    plt.semilogy(gmean(Vars_AMTT23, axis=1)[gmean(Vars_AMTT23, axis=1) > 0],
+                 linewidth=3, color='b', alpha=1)
+    plt.semilogy(gmean(Vars_BCLN23, axis=1)[gmean(Vars_BCLN23, axis=1) > 0],
+                 linewidth=3, color='g', alpha=1)
+
+    plt.ylabel('Variance')
+    plt.xlabel(r'Iteration number $(k)$')
+    plt.xlim(0, maxit - 50)
+    plt.ylim(1e-22, 1e1)
+    plt.grid()
+    plt.savefig('results/experiment_portopt_1.pdf', bbox_inches='tight')
+    plt.show()
+
+
+    # plotting distances to solution
+    plt.figure(figsize=(5, 5))
+
+    # plotting all data
+    plt.semilogy(Dist_DFB_one, color='c', alpha=.1)
+    plt.semilogy(Dist_DFB, color='k', alpha=.1)
+    plt.semilogy(Dist_DFB_opt, color='y', alpha=.1)
+    plt.semilogy(Dist_ACL24, color='r', alpha=.1)
+    plt.semilogy(Dist_AMTT23, color='b', alpha=.1)
+    plt.semilogy(Dist_BCLN23, color='g', alpha=.1)
+
+    # plotting averages
+    plt.semilogy(gmean(Dist_DFB, axis=1),
+                 linewidth=3, color='k', alpha=1, label='DFB')
+    plt.semilogy(gmean(Dist_DFB, axis=1),
+                 linewidth=3, color='c', alpha=1, label='DFB_one')
+    plt.semilogy(gmean(Dist_DFB_opt, axis=1),
+                 linewidth=3, color='y', alpha=1, label='DFB_opt')
+    plt.semilogy(gmean(Dist_ACL24, axis=1),
+                 linewidth=3, color='r', alpha=1, label='ACL24')
+    plt.semilogy(gmean(Dist_AMTT23, axis=1),
+                 linewidth=3, color='b', alpha=1, label='AMTT23')
+    plt.semilogy(gmean(Dist_BCLN23, axis=1),
+                 linewidth=3, color='g', alpha=1, label='BCLN23')
+
+    plt.ylabel(r'$\| x_2^k - x^* \|^2$')
+    plt.xlabel(r'Iteration number $(k)$')
+    plt.xlim(0, maxit - 50)
+    plt.ylim(1e-21, 1e1)
+    plt.grid()
+    plt.legend()
+    plt.savefig('results/experiment_portopt_2.pdf', bbox_inches='tight')
+    plt.show()
+
+
+def plot_returns(rev, prices):
+
+    # getting dates
+    dates = prices.index.to_list()
+    dates = np.array(list(map(lambda x: f'0{x.month}.{x.year}', dates)))
+
+    T, dim = rev.shape
+    plt.figure(figsize=(7, 4))
+    plt.plot(np.flip(rev[:, 1:], axis=0), linewidth=1, color='k', alpha=0.5)
+    plt.plot(np.flip(rev[:, 0], axis=0), linewidth=1, color='k', alpha=0.5, label='Asset Return')
+    plt.xlim(-0.05, T)
+
+    # plotting vertical splits
+    plt.axvline(x=0, color='b')
+    plt.axvline(x=31, color='b')
+    plt.axvline(x=62, color='b')
+    plt.axvline(x=93, color='b',)
+    plt.axvline(x=T, color='b')
+
+
+    domain = np.arange(0, 120, 19)
+    plt.xticks(np.flip(domain), list(dates[domain]), rotation=45)
+    plt.xlabel('Dates')
+    plt.ylabel(r'Asset Return (\%)')
+    plt.grid()
+    plt.savefig('results/dataset.pdf', bbox_inches='tight')
     plt.show()

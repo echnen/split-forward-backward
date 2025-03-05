@@ -40,6 +40,7 @@ import operators as op
 import optimization as optim
 import plots as show
 from tqdm import tqdm
+import portfolio_optimization as port_opt
 
 
 def experiment_0(maxit=1000):
@@ -69,10 +70,8 @@ def experiment_0(maxit=1000):
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
 
-    # storing into dictionary
-    data = {}
-    data['dim'] = dim; data['A'] = A; data['y'] = y; data['Anchors'] = Anchors
-    data['delta_1'] = delta_1; data['delta_2'] = delta_2
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -105,11 +104,11 @@ def experiment_0(maxit=1000):
         # running the two methods
         Vars_het[:, cs], Objs_het[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas_het, F, w_init,
-                                  maxit, tau, data, None, None, N, K)
+                                  maxit, tau, Model, None, None, N, K)
 
         Vars_hom[:, cs], Objs_hom[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas_hom, F, w_init,
-                                  maxit, tau, data, None, None, N, K)
+                                  maxit, tau, Model, None, None, N, K)
 
 
     show.plot_experiment_0(Vars_hom, Vars_het, Objs_hom, Objs_het, cases, maxit)
@@ -144,10 +143,8 @@ def experiment_1(maxit=1000):
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
 
-    # storing into dictionary
-    data = {}
-    data['dim'] = dim; data['A'] = A; data['y'] = y; data['Anchors'] = Anchors
-    data['delta_1'] = delta_1; data['delta_2'] = delta_2
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -182,22 +179,22 @@ def experiment_1(maxit=1000):
         # positive N and positive K
         Vars_pp[:, cs], Objs_pp[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, data, [0, 1], [0, 1])
+                                  w_init, maxit, tau, Model, [0, 1], [0, 1])
 
         # positive N and negative K
         Vars_pn[:, cs], Objs_pn[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, data, [0, 1], [-1, 1])
+                                  w_init, maxit, tau, Model, [0, 1], [-1, 1])
 
         # negative N and positive K
         Vars_np[:, cs], Objs_np[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, data, [-1, 1], [0, 1],)
+                                  w_init, maxit, tau, Model, [-1, 1], [0, 1],)
 
         # negative N and negative K
         Vars_nn[:, cs], Objs_nn[:, cs] = \
             optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, data, [-1, 1], [-1, 1])
+                                  w_init, maxit, tau, Model, [-1, 1], [-1, 1])
 
     show.plot_experiment_1(Vars_pp, Vars_pn, Vars_np, Vars_nn, Objs_pp, Objs_pn,
                            Objs_np, Objs_nn, cases, maxit)
@@ -229,10 +226,8 @@ def experiment_2(hetereogenity=10, maxit=500):
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
 
-    # storing into dictionary
-    data = {}
-    data['dim'] = dim; data['A'] = A; data['y'] = y; data['Anchors'] = Anchors
-    data['delta_1'] = delta_1; data['delta_2'] = delta_2
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -266,36 +261,35 @@ def experiment_2(hetereogenity=10, maxit=500):
 
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         Vars_DFB[:, cs], Objs_DFB[:, cs] = \
-            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, data)
-
-
+            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Campoy, Lopez-Pastor, 2024
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         # betas = np.max(betas) * np.ones(f)
         Vars_ACL24[:, cs], Objs_ACL24[:, cs] = \
-            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         betas = np.max(betas) * np.ones(f)
         Vars_AMTT23[:, cs], Objs_AMTT23[:, cs] = \
-            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Bredies, Chenchene, Lorenz, Naldi, 2023
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         betas = np.max(betas) * np.ones(f)
         Vars_BCLN23[:, cs], Objs_BCLN23[:, cs] = \
-            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
     show.plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
                            Objs_DFB, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
                            hetereogenity, maxit)
 
-def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic = False):
+
+def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False):
     '''
     In this experiment, we test our distributed method againts other instances
     in the literature, with optimized H and K
@@ -321,10 +315,8 @@ def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic = False):
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
 
-    # storing into dictionary
-    data = {}
-    data['dim'] = dim; data['A'] = A; data['y'] = y; data['Anchors'] = Anchors
-    data['delta_1'] = delta_1; data['delta_2'] = delta_2
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -361,40 +353,35 @@ def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic = False):
 
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         Vars_DFB[:, cs], Objs_DFB[:, cs] = \
-            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
-        # Distributed Forward Backward (DFB). Our paper
-        if cs == 0:
-            f = int(b * (b - 1) / 2)
-        else:
-            f = np.random.randint(1, b - 1 + 1)
-        f = b-1
+        # optimized Distributed Forward Backward (DFB). Our paper
+        f = b - 1
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         Vars_DFB_opt[:, cs], Objs_DFB_opt[:, cs] = \
-            optim.DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, data,heuristic=heuristic)
-
-
+            optim.DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                                heuristic=heuristic)
 
         # Artacho, Campoy, Lopez-Pastor, 2024
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         # betas = np.max(betas) * np.ones(f)
         Vars_ACL24[:, cs], Objs_ACL24[:, cs] = \
-            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         betas = np.max(betas) * np.ones(f)
         Vars_AMTT23[:, cs], Objs_AMTT23[:, cs] = \
-            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Bredies, Chenchene, Lorenz, Naldi, 2023
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         betas = np.max(betas) * np.ones(f)
         Vars_BCLN23[:, cs], Objs_BCLN23[:, cs] = \
-            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, data)
+            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
     show.plot_experiment_2_optimized(Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
                            Objs_DFB,Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
@@ -427,6 +414,9 @@ def experiment_3(maxit=1000):
 
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
+
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -476,7 +466,7 @@ def experiment_3(maxit=1000):
             mean_x = np.mean(x, axis=0)
 
             # compute objective value
-            obj = st.fobj_exp1(mean_x, A, y, Anchors, delta_1, delta_2)
+            obj = Model.objective(mean_x)
             Objs[k, cs] = obj
 
             # computing variance
@@ -513,6 +503,9 @@ def experiment_4(maxit=200):
 
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
+
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
 
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
@@ -563,7 +556,7 @@ def experiment_4(maxit=200):
                 mean_x = np.mean(x, axis=0)
 
                 # compute objective value
-                obj = st.fobj_exp1(mean_x, A, y, Anchors, delta_1, delta_2)
+                obj = Model.objective(mean_x)
                 Objs[k, f - 1, cs] = obj
 
                 # computing variance
@@ -572,7 +565,8 @@ def experiment_4(maxit=200):
 
     show.plot_experiment_4(m, cases, Vars, Objs, Spects, maxit)
 
-def experiment_4_optimized(maxit=200,heuristic = False):
+
+def experiment_4_optimized(maxit=200, heuristic=True):
     '''
     In this experiment, we test the influence on the number of forward terms
     actually, when N and K are optimized. Does it help the optimization?
@@ -600,6 +594,9 @@ def experiment_4_optimized(maxit=200,heuristic = False):
     # generating anchor points
     Anchors = np.random.normal(0, 5, size=(dim, b))
 
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
+
     # defining backward operators
     Proxs = st.create_Proxs(Anchors)
 
@@ -623,7 +620,7 @@ def experiment_4_optimized(maxit=200,heuristic = False):
         # defining forward terms
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
         # splitting forward operators
-        for cs in range(cases):            
+        for cs in range(cases):
             if heuristic:
                 F = optim.F_heuristic(f,b,betas)
             else:
@@ -649,11 +646,110 @@ def experiment_4_optimized(maxit=200,heuristic = False):
                 mean_x = np.mean(x, axis=0)
 
                 # compute objective value
-                obj = st.fobj_exp1(mean_x, A, y, Anchors, delta_1, delta_2)
+                obj = Model.objective(mean_x)
                 Objs[k, f - 1, cs] = obj
 
                 # computing variance
                 var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
                 Vars[k, f - 1, cs] = var
 
-    show.plot_experiment_4(m, cases, Vars, Objs, Spects, maxit, outliers = [1,3])
+    show.plot_experiment_4(m, cases, Vars, Objs, Spects, maxit, outliers = [1, 3])
+
+
+def experiment_portfolio_optimization(maxit=500):
+    '''
+    In this experiment, we test our distributed method againts other instances
+    in the literature on the portfolio optimization problem,
+    with optimized H and K
+    '''
+
+    tau = 1
+    np.random.seed(0)
+
+    # reading data and obtaining operators
+    Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=False)
+    Proxs_one, Grads_one, betas_one, Model_one = port_opt.get_operators(1, Download=False)
+
+    b = len(Proxs)
+
+    # cases
+    cases = 20
+
+    # initialization
+    w_init = np.zeros((b, Model.dim))
+
+    # computing optimal solution
+    _, _, _, x_opt = optim.DFB_optimized(Proxs, Grads, betas, w_init, 20 * maxit,
+                                         tau, Model, Compute_Dist_to_Sol=True)
+    Model.x_opt = x_opt
+    Model_one.x_opt = x_opt
+
+    # storage
+    Vars_DFB_one = np.zeros((maxit, cases))
+    Objs_DFB_one = np.zeros((maxit, cases))
+    Dist_DFB_one = np.zeros((maxit, cases))
+
+    Vars_DFB = np.zeros((maxit, cases))
+    Objs_DFB = np.zeros((maxit, cases))
+    Dist_DFB = np.zeros((maxit, cases))
+
+    Vars_DFB_opt = np.zeros((maxit, cases))
+    Objs_DFB_opt = np.zeros((maxit, cases))
+    Dist_DFB_opt = np.zeros((maxit, cases))
+
+    Vars_ACL24 = np.zeros((maxit, cases))
+    Objs_ACL24 = np.zeros((maxit, cases))
+    Dist_ACL24 = np.zeros((maxit, cases))
+
+    Vars_AMTT23 = np.zeros((maxit, cases))
+    Objs_AMTT23 = np.zeros((maxit, cases))
+    Dist_AMTT23 = np.zeros((maxit, cases))
+
+    Vars_BCLN23 = np.zeros((maxit, cases))
+    Objs_BCLN23 = np.zeros((maxit, cases))
+    Dist_BCLN23 = np.zeros((maxit, cases))
+
+    for cs in tqdm(range(cases)):
+
+        # Distributed Forward Backward (DFB). With only one forward term
+        Vars_DFB_one[:, cs], Objs_DFB_one[:, cs], Dist_DFB_one[:, cs], _ = \
+            optim.DFB(Proxs_one, Grads_one, betas_one, w_init, maxit, tau, Model_one,
+                      Compute_Dist_to_Sol=True)
+
+        # Distributed Forward Backward (DFB). Our paper
+        Vars_DFB[:, cs], Objs_DFB[:, cs], Dist_DFB[:, cs], _ = \
+            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                      Compute_Dist_to_Sol=True)
+
+        # optimized Distributed Forward Backward (DFB). Our paper
+        Vars_DFB_opt[:, cs], Objs_DFB_opt[:, cs], Dist_DFB_opt[:, cs], _ = \
+            optim.DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                                Compute_Dist_to_Sol=True, heuristic=False)
+
+        # Artacho, Campoy, Lopez-Pastor, 2024
+        betas = np.max(betas) * np.ones(4)
+        Vars_ACL24[:, cs], Objs_ACL24[:, cs], Dist_ACL24[:, cs], _ = \
+            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                        Compute_Dist_to_Sol=True)
+
+        # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
+        betas = np.max(betas) * np.ones(4)
+        Vars_AMTT23[:, cs], Objs_AMTT23[:, cs], Dist_AMTT23[:, cs], _ = \
+            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                         Compute_Dist_to_Sol=True)
+
+        # Bredies, Chenchene, Lorenz, Naldi, 2023
+        betas = np.max(betas) * np.ones(4)
+        Vars_BCLN23[:, cs], Objs_BCLN23[:, cs], Dist_BCLN23[:, cs], _ = \
+            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                         Compute_Dist_to_Sol=True)
+
+    show.plot_experiment_portopt(Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
+                                Objs_DFB_one, Objs_DFB, Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+                                Dist_DFB_one, Dist_DFB, Dist_DFB_opt, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
+                                x_opt, maxit)
+
+    return (Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
+            Objs_DFB_one, Objs_DFB, Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+            Dist_DFB_one, Dist_DFB, Dist_DFB_opt, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
+            x_opt, maxit)
