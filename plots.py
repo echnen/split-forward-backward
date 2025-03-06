@@ -516,7 +516,7 @@ def plot_experiment_portopt(Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Va
     # plotting averages
     plt.semilogy(gmean(Dist_DFB, axis=1),
                  linewidth=3, color='k', alpha=1, label='DFB')
-    plt.semilogy(gmean(Dist_DFB, axis=1),
+    plt.semilogy(gmean(Dist_DFB_one, axis=1),
                  linewidth=3, color='c', alpha=1, label='DFB_one')
     plt.semilogy(gmean(Dist_DFB_opt, axis=1),
                  linewidth=3, color='y', alpha=1, label='DFB_opt')
