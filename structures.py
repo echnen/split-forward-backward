@@ -84,36 +84,9 @@ def create_Proxs(Anchors):
     return [create_prox_function_ell_2(anchor) for anchor in Anchors.T]
 
 
-def create_grad_function(delta, A_j, y_j):
-
-    return lambda x: A_j.T @ np.array(dhub(delta, A_j @ x - y_j), ndmin=1)
-
-
 def create_grad_function_hub_flat(delta_1, delta_2, A_j, y_j):
 
     return lambda x: A_j.T @ np.array(dhub_flat(delta_1, delta_2, A_j @ x - y_j), ndmin=1)
-
-
-def create_Grads(delta, f, A, y):
-    '''
-    ####################### no longer used
-    '''
-    m, dim = A.shape
-
-    # splitting the forward terms into different chunks of balanced size
-    chunks_indeces = np.array_split(np.arange(m), f)
-
-    Grads = []
-    betas = []
-
-    for j in range(f):
-        A_j = A[chunks_indeces[j], :]
-        y_j = y[chunks_indeces[j]]
-
-        Grads.append(create_grad_function(delta, A_j, y_j))
-        betas.append(np.linalg.norm(A_j.T @ A_j, 2))
-
-    return Grads, betas
 
 
 def create_Grads_hub_flat(delta_1, delta_2, f, A, y):
@@ -158,7 +131,7 @@ def create_N_and_K(F, f, b, Range_N, Range_K):
     return N, K
 
 
-def create_N_and_K_DFB(f, b):
+def create_N_and_K_aGFB(f, b):
     '''
     Implements the N and K in Example REF in the paper.
     '''
@@ -205,15 +178,11 @@ def create_N_and_K_DFB(f, b):
 
     return N, K, F
 
+
 def create_N_and_K_optimized(F, f, b, beta_diag):
     '''
     Chooses N and K to minimize 2-norm sqrt(beta_diag) * (H.T - K)
 
-    Parameters
-    ----------
-    F : (m,n)-nondecreasing vector defining order
-    f : number of forward evaluations
-    b : number of backward evaluations
     beta_diag : diagonal matrix of beta-values
     '''
 
@@ -325,36 +294,6 @@ def create_N_and_K_AMTT23(f, b):
     return N, K, F
 
 
-def hub(delta, z):
-
-    # force it as array
-    z = np.array(z, ndmin=1)
-    norms = np.abs(z)
-
-    out = np.copy(norms)
-
-    out[norms <= delta] = 0.5 * out[norms <= delta] ** 2
-    out[norms > delta] =  delta * (out[norms > delta] - 0.5 * delta)
-
-    return np.sum(out)
-
-
-def dhub(delta, z):
-
-    # force it as array
-    z = np.array(z, ndmin=1)
-    norms = np.abs(z)
-
-    out = np.copy(z)
-
-    out[norms > delta] = delta * np.sign(z[norms > delta])
-
-    if len(out) == 1:
-        return out[0]
-    else:
-        return out
-
-
 def hub_flat(delta_1, delta_2, z):
     '''
     Computes the function
@@ -405,25 +344,3 @@ def dhub_flat(delta_1, delta_2, z):
         return out[0]
     else:
         return out
-
-
-def fobj_exp2(x, A, y, Anchors, delta):
-    '''
-    #################### No longer used
-    '''
-
-    fidelity = hub(delta, A @ x - y)
-    non_smooth = np.sum(np.linalg.norm(x[:, np.newaxis] - Anchors, axis=0))
-
-    return fidelity + non_smooth
-
-
-def fobj_exp1(x, A, y, Anchors, delta_1, delta_2):
-    '''
-    #################### No longer used
-    '''
-
-    fidelity = hub_flat(delta_1, delta_2, A @ x - y)
-    non_smooth = np.sum(np.linalg.norm(x[:, np.newaxis] - Anchors, axis=0))
-
-    return fidelity + non_smooth

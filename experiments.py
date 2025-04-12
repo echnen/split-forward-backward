@@ -41,10 +41,179 @@ import optimization as optim
 import plots as show
 from tqdm import tqdm
 import portfolio_optimization as port_opt
+import networkx as nx
 
 
-def experiment_0(maxit=1000):
+def experiment_testing_M(maxit=100):
     '''
+    In this experiment, we test the influence of the matrix M
+    '''
+
+    np.random.seed(0)
+
+    # problem and algorithm's parameters
+    dim = 2       # dimension of the problem
+    m = 10        # dimension of matrix (note: f must be <= than m)
+    b = 20        # number of backward steps
+    f = 10        # number of forward terms
+    delta_1 = 1   # parameter for huber function
+    delta_2 = 2
+    tau = 1       # step-size
+
+    # generating sample
+    block_corruped_size = 2
+    # np.random.seed(4)
+    A = 2 * (np.random.rand(m, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, m)
+    A[noise_columns, :] = 5 * A[noise_columns, :]
+    y = np.random.rand(m)
+
+    # generating anchor points
+    Anchors = np.random.normal(0, 5, size=(dim, b))
+
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
+
+    # defining backward operators
+    Proxs = st.create_Proxs(Anchors)
+
+    # cases
+    cases = 200
+
+    # initialization
+    w_init = np.zeros((b, dim))
+
+    # defining N and K (randomly)
+    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
+    F = np.sort(np.random.randint(1, f + 1, b - 2))
+    F = np.hstack(([0], F, [f]))
+    N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+
+    # storage
+    Vars = np.zeros((maxit, cases))
+    Objs = np.zeros((maxit, cases))
+    Spec = np.zeros(cases)
+
+    for cs in tqdm(range(cases)):
+
+        if cs == 0:
+            Lap = b * np.eye(b) - np.ones(b)
+            norm = np.linalg.norm(Lap, 2)
+            Lap = Lap / norm
+
+        elif cs >= 1 and cs < 20:
+            Lap = np.random.rand(b, b - 1)
+            Lap = Lap - np.mean(Lap, axis=0)[np.newaxis, :]
+            Lap = Lap @ Lap.T
+            norm = np.linalg.norm(Lap, 2)
+            Lap = Lap / norm
+
+        else:
+            # sampling random Laplacian
+            G = nx.connected_watts_strogatz_graph(b, np.random.randint(2, b), p=.8)
+            Lap = nx.laplacian_matrix(G)
+            Lap = Lap.toarray()
+            norm = np.linalg.norm(Lap, 2)
+            Lap = Lap / norm
+
+        sLap = 0 * Lap
+
+        # running the two methods
+        Vars[:, cs], Objs[:, cs] = \
+            optim.General_Instance(Proxs, Grads, betas, F, w_init,
+                                   maxit, tau, Model, Lap, sLap, N, K)
+
+        Spec[cs] = np.linalg.eigh(Lap)[0][1]
+
+    show.plot_experiment_Lap(Objs, Spec, cases, maxit)
+    #return Objs, Spec, cases, maxit
+
+
+def experiment_testing_P(maxit=100):
+    '''
+    In this experiment, we test the influence of the matrix P
+    '''
+
+    np.random.seed(0)
+
+    # problem and algorithm's parameters
+    dim = 2       # dimension of the problem
+    m = 10        # dimension of matrix (note: f must be <= than m)
+    b = 20        # number of backward steps
+    f = 10        # number of forward terms
+    delta_1 = 1   # parameter for huber function
+    delta_2 = 2
+    tau = 1       # step-size
+
+    # generating sample
+    block_corruped_size = 2
+    # np.random.seed(4)
+    A = 2 * (np.random.rand(m, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, m)
+    A[noise_columns, :] = 5 * A[noise_columns, :]
+    y = np.random.rand(m)
+
+    # generating anchor points
+    Anchors = np.random.normal(0, 5, size=(dim, b))
+
+    # initializing optimization problem
+    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
+
+    # defining backward operators
+    Proxs = st.create_Proxs(Anchors)
+
+    # cases
+    cases = 200
+
+    # initialization
+    w_init = np.zeros((b, dim))
+
+    # defining N and K (randomly)
+    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
+    F = np.sort(np.random.randint(1, f + 1, b - 2))
+    F = np.hstack(([0], F, [f]))
+    N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+
+    # defining Lap (randomly)
+    G = nx.connected_watts_strogatz_graph(b, b - 2, p=.8, seed=0)
+    Lap = nx.laplacian_matrix(G)
+    Lap = Lap.toarray()
+    norm = np.linalg.norm(Lap, 2)
+    Lap = Lap / norm
+    print(f'Algebraic Connectivity: {np.linalg.eigh(Lap)[0][1]}')
+
+    # storage
+    Vars = np.zeros((maxit, cases))
+    Objs = np.zeros((maxit, cases))
+    Spec = np.zeros(cases)
+
+    for cs in tqdm(range(cases)):
+
+        if cs == 0:
+            new_norm = 0
+            sLap = new_norm * Lap
+        else:
+            sLap = np.random.rand(b, b - 1)
+            sLap = sLap - np.mean(sLap, axis=0)[np.newaxis, :]
+            sLap = sLap @ sLap.T
+            old_norm = np.linalg.norm(sLap, 2)
+            new_norm = np.random.rand()
+            sLap = new_norm * sLap / old_norm
+
+        # running the two methods
+        Vars[:, cs], Objs[:, cs] = \
+            optim.General_Instance(Proxs, Grads, betas, F, w_init,
+                                   maxit, tau, Model, Lap, sLap, N, K)
+
+        Spec[cs] = new_norm
+
+    show.plot_experiment_P(Objs, Spec, cases, maxit)
+    return Objs, Spec, cases, maxit
+
+
+def experiment_testing_betas(maxit=1000):
+    '''
+    NOTE Former experiment 0
     In this experiment, we test hetereogenity of data.
     '''
 
@@ -111,33 +280,34 @@ def experiment_0(maxit=1000):
                                   maxit, tau, Model, None, None, N, K)
 
 
-    show.plot_experiment_0(Vars_hom, Vars_het, Objs_hom, Objs_het, cases, maxit)
+    show.plot_experiment_testing_betas(Objs_hom, Objs_het, cases, maxit)
 
 
-def experiment_1(maxit=1000):
+def experiment_testing_W(maxit=100):
     '''
-    In this experiment, we test whether having negative (reflected-type) step
-    sizes enhance the performance of the method.
+    NOTE: Former experiment_4
 
+    In this experiment, we test the influence on the number of the spectral
+    norm of W, with N and K chosen randomly and optimized.
     '''
 
     np.random.seed(0)
 
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
-    m = 20        # dimension of matrix (note: f must be <= than m)
-    b = 4         # number of backward steps
-    f = 15        # number of forward terms
+    m = 50        # dimension of matrix (note: f must be <= than m)
+    b = 15         # number of backward steps
     delta_1 = 1   # parameter for huber function
     delta_2 = 2
     tau = 1       # step-size
 
     # generating sample
-    block_corruped_size = 3
+    block_corruped_size = 5
     # np.random.seed(4)
     A = 2 * (np.random.rand(m, dim) - 0.5)
     noise_columns = np.random.randint(block_corruped_size, m)
-    A[noise_columns, :] = 5 * A[noise_columns, :]
+    noise_columns = np.arange(0, block_corruped_size)
+    A[noise_columns, :] = 10 * A[noise_columns, :]
     y = np.random.rand(m)
 
     # generating anchor points
@@ -150,147 +320,48 @@ def experiment_1(maxit=1000):
     Proxs = st.create_Proxs(Anchors)
 
     # cases
-    cases = 20
+    cases = 10
 
     # initialization
     w_init = np.zeros((b, dim))
 
     # storage
-    Vars_pp = np.zeros((maxit, cases))
-    Objs_pp = np.zeros((maxit, cases))
+    Objs = np.zeros((maxit, m, cases))
+    Spects = np.zeros((m, cases))
 
-    Vars_pn = np.zeros((maxit, cases))
-    Objs_pn = np.zeros((maxit, cases))
+    # defining Laplacian
+    Lap =  b * np.eye(b) - np.ones(b)
+    sLap = 0 * Lap
 
-    Vars_np = np.zeros((maxit, cases))
-    Objs_np = np.zeros((maxit, cases))
-
-    Vars_nn = np.zeros((maxit, cases))
-    Objs_nn = np.zeros((maxit, cases))
-
-    for cs in tqdm(range(cases)):
+    for f in tqdm(range(1, m + 1)):
 
         # defining forward terms
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
 
-        F = np.sort(np.random.randint(1, f + 1, b - 2))
-        F = np.hstack(([0], F, [f]))
+        # splitting forward operators
+        for cs in range(cases):
 
-        # positive N and positive K
-        Vars_pp[:, cs], Objs_pp[:, cs] = \
-            optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, Model, [0, 1], [0, 1])
+            F = np.sort(np.random.randint(1, f + 1, b - 2))
+            F = np.hstack(([0], F, [f]))
 
-        # positive N and negative K
-        Vars_pn[:, cs], Objs_pn[:, cs] = \
-            optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, Model, [0, 1], [-1, 1])
+            # defining N and K (randomly)
+            N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
 
-        # negative N and positive K
-        Vars_np[:, cs], Objs_np[:, cs] = \
-            optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, Model, [-1, 1], [0, 1],)
+            # computing norm of W
+            P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
+            Spects[f - 1, cs] = np.linalg.norm(P, 2)
 
-        # negative N and negative K
-        Vars_nn[:, cs], Objs_nn[:, cs] = \
-            optim.Random_Instance(Proxs, Grads, betas, F,
-                                  w_init, maxit, tau, Model, [-1, 1], [-1, 1])
+            _, Objs[:, f - 1, cs] = optim.General_Instance(Proxs, Grads, betas, F,
+                                                       w_init, maxit, tau,
+                                                       Model, Lap,
+                                                       sLap, N, K)
 
-    show.plot_experiment_1(Vars_pp, Vars_pn, Vars_np, Vars_nn, Objs_pp, Objs_pn,
-                           Objs_np, Objs_nn, cases, maxit)
+    show.plot_experiment_W(m, cases, Objs, Spects, maxit)
 
 
-def experiment_2(hetereogenity=10, maxit=500):
+def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
     '''
-    In this experiment, we test our distributed method againts other instances
-    in the literature.
-    '''
-
-    np.random.seed(0)
-
-    # problem and algorithm's parameters
-    dim = 2        # dimension of the problem
-    m = 20         # dimension of matrix (note: f must be <= than m)
-    b = 5          # number of backward steps
-    delta_1 = 1    # parameter for huber function
-    delta_2 = 2
-    tau = 1        # step-size
-
-    # generating sample
-    block_corruped_size = 2
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
-    A[noise_columns, :] = hetereogenity * A[noise_columns, :]
-    y = np.random.rand(m)
-
-    # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
-
-    # initializing optimization problem
-    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
-
-    # defining backward operators
-    Proxs = st.create_Proxs(Anchors)
-
-    # cases
-    cases = 20
-
-    # initialization
-    w_init = np.zeros((b, dim))
-
-    # storage
-    Vars_DFB = np.zeros((maxit, cases))
-    Objs_DFB = np.zeros((maxit, cases))
-
-    Vars_ACL24 = np.zeros((maxit, cases))
-    Objs_ACL24 = np.zeros((maxit, cases))
-
-    Vars_AMTT23 = np.zeros((maxit, cases))
-    Objs_AMTT23 = np.zeros((maxit, cases))
-
-    Vars_BCLN23 = np.zeros((maxit, cases))
-    Objs_BCLN23 = np.zeros((maxit, cases))
-
-    for cs in tqdm(range(cases)):
-
-        # Distributed Forward Backward (DFB). Our paper
-        if cs == 0:
-            f = int(b * (b - 1) / 2)
-        else:
-            f = np.random.randint(1, b * (b - 1) / 2)
-
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        Vars_DFB[:, cs], Objs_DFB[:, cs] = \
-            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
-
-        # Artacho, Campoy, Lopez-Pastor, 2024
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        # betas = np.max(betas) * np.ones(f)
-        Vars_ACL24[:, cs], Objs_ACL24[:, cs] = \
-            optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model)
-
-        # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas = np.max(betas) * np.ones(f)
-        Vars_AMTT23[:, cs], Objs_AMTT23[:, cs] = \
-            optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model)
-
-        # Bredies, Chenchene, Lorenz, Naldi, 2023
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas = np.max(betas) * np.ones(f)
-        Vars_BCLN23[:, cs], Objs_BCLN23[:, cs] = \
-            optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
-
-    show.plot_experiment_2(Vars_DFB, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-                           Objs_DFB, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                           hetereogenity, maxit)
-
-
-def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False):
-    '''
+    NOTE: former experiment_2_optimized
     In this experiment, we test our distributed method againts other instances
     in the literature, with optimized H and K
     '''
@@ -328,11 +399,11 @@ def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False):
     w_init = np.zeros((b, dim))
 
     # storage
-    Vars_DFB = np.zeros((maxit, cases))
-    Objs_DFB = np.zeros((maxit, cases))
+    Vars_aGFB = np.zeros((maxit, cases))
+    Objs_aGFB = np.zeros((maxit, cases))
 
-    Vars_DFB_opt = np.zeros((maxit, cases))
-    Objs_DFB_opt = np.zeros((maxit, cases))
+    Vars_SFB_plus = np.zeros((maxit, cases))
+    Objs_SFB_plus = np.zeros((maxit, cases))
 
     Vars_ACL24 = np.zeros((maxit, cases))
     Objs_ACL24 = np.zeros((maxit, cases))
@@ -345,27 +416,26 @@ def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False):
 
     for cs in tqdm(range(cases)):
 
-        # Distributed Forward Backward (DFB). Our paper
+        # Adapted Graph Forward-Backward (aGFB). Our paper
         if cs == 0:
             f = int(b * (b - 1) / 2)
         else:
             f = np.random.randint(1, b * (b - 1) / 2)
 
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        Vars_DFB[:, cs], Objs_DFB[:, cs] = \
-            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
+        Vars_aGFB[:, cs], Objs_aGFB[:, cs] = \
+            optim.aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
-        # optimized Distributed Forward Backward (DFB). Our paper
+        # Split-Forward-Backward+ (SFB+). Our paper
         f = b - 1
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        Vars_DFB_opt[:, cs], Objs_DFB_opt[:, cs] = \
-            optim.DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
-                                heuristic=heuristic)
+        Vars_SFB_plus[:, cs], Objs_SFB_plus[:, cs] = \
+            optim.SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Campoy, Lopez-Pastor, 2024
         f = np.random.randint(1, b - 1 + 1)
         Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        # betas = np.max(betas) * np.ones(f)
+        betas = np.max(betas) * np.ones(f)
         Vars_ACL24[:, cs], Objs_ACL24[:, cs] = \
             optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
@@ -383,292 +453,24 @@ def experiment_2_optimized(hetereogenity=10, maxit=500, heuristic=False):
         Vars_BCLN23[:, cs], Objs_BCLN23[:, cs] = \
             optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
-    show.plot_experiment_2_optimized(Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-                           Objs_DFB,Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                           hetereogenity, maxit)
-
-
-
-def experiment_3(maxit=1000):
-    '''
-    In this experiment, we consider randomly generated FB methods with
-    different N and K and study the influence of the spectrum of P
-    '''
-
-    np.random.seed(0)
-
-    # problem and algorithm's parameters
-    dim = 2        # dimension of the problem
-    m = 20         # dimension of matrix (note: f must be <= than m)
-    b = 4          # number of backward steps
-    f = 20         # number of forward steps
-    delta_1 = 1    # parameter for huber function
-    delta_2 = 2
-    tau = 1        # step-size
-
-    # generating sample
-    np.random.seed(4)
-    A = np.random.rand(m, dim)
-    A[0, :] = 6 * A[0, :]
-    y = np.random.rand(m)
-
-    # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
-
-    # initializing optimization problem
-    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
-
-    # defining backward operators
-    Proxs = st.create_Proxs(Anchors)
-
-    # defining forward terms
-    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-
-    # cases
-    cases = 50
-
-    # initialization
-    w_init = np.zeros((b, dim))
-
-    # storage
-    Vars = np.zeros((maxit, cases))
-    Objs = np.zeros((maxit, cases))
-    Lams = np.zeros(cases)
-
-    # defining Laplacian
-    Lap =  b * np.eye(b) - np.ones(b)
-    sLap = 0 * Lap
-
-    for cs in tqdm(range(cases)):
-
-        # splitting forward operators
-        F = np.sort(np.random.randint(1, f + 1, b - 2))
-        F = np.hstack(([0], F, [f]))
-
-        # defining N and K
-        N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
-
-        # computing spectrum of forward matrix
-        P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-        lambda_1 = np.linalg.norm(P, 2)
-        Lams[cs] = lambda_1
-
-        # defining operator
-        J = op.genFBO(tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F)
-
-        # optimization
-        w = np.copy(w_init)
-
-        for k in range(maxit):
-
-            # step
-            w, x = J.apply(w)
-            mean_x = np.mean(x, axis=0)
-
-            # compute objective value
-            obj = Model.objective(mean_x)
-            Objs[k, cs] = obj
-
-            # computing variance
-            var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
-            Vars[k, cs] = var
-
-    show.plot_experiment_3(Vars, Objs, Lams, cases, maxit)
-
-
-def experiment_4(maxit=200):
-    '''
-    In this experiment, we test the influence on the number of forward terms
-    actually. Does it help the optimization?
-    '''
-
-    np.random.seed(0)
-
-    # problem and algorithm's parameters
-    dim = 2       # dimension of the problem
-    m = 20        # dimension of matrix (note: f must be <= than m)
-    b = 4         # number of backward steps
-    delta_1 = 1   # parameter for huber function
-    delta_2 = 2
-    tau = 1       # step-size
-
-    # generating sample
-    block_corruped_size = 1
-    # np.random.seed(4)
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
-    noise_columns = np.arange(0, block_corruped_size)
-    A[noise_columns, :] = 4 * A[noise_columns, :]
-    y = np.random.rand(m)
-
-    # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
-
-    # initializing optimization problem
-    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
-
-    # defining backward operators
-    Proxs = st.create_Proxs(Anchors)
-
-    # cases
-    cases = 3
-
-    # initialization
-    w_init = np.zeros((b, dim))
-
-    # storage
-    Vars = np.zeros((maxit, m, cases))
-    Objs = np.zeros((maxit, m, cases))
-    Spects = np.zeros((m, cases))
-
-    # defining Laplacian
-    Lap =  b * np.eye(b) - np.ones(b)
-    sLap = 0 * Lap
-
-    for f in tqdm(range(1, m + 1)):
-
-        # defining forward terms
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-
-        # splitting forward operators
-        for cs in range(cases):
-
-            F = np.sort(np.random.randint(1, f + 1, b - 2))
-            F = np.hstack(([0], F, [f]))
-
-            # defining N and K
-            N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
-
-            # computing norm of W
-            P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-            Spects[f - 1, cs] = np.linalg.norm(P, 2)
-
-            # defining operator
-            J = op.genFBO(tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F)
-
-            # optimization
-            w = np.copy(w_init)
-
-            for k in range(maxit):
-
-                # step
-                w, x = J.apply(w)
-                mean_x = np.mean(x, axis=0)
-
-                # compute objective value
-                obj = Model.objective(mean_x)
-                Objs[k, f - 1, cs] = obj
-
-                # computing variance
-                var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
-                Vars[k, f - 1, cs] = var
-
-    show.plot_experiment_4(m, cases, Vars, Objs, Spects, maxit)
-
-
-def experiment_4_optimized(maxit=200, heuristic=True):
-    '''
-    In this experiment, we test the influence on the number of forward terms
-    actually, when N and K are optimized. Does it help the optimization?
-    '''
-
-    np.random.seed(0)
-
-    # problem and algorithm's parameters
-    dim = 2       # dimension of the problem
-    m = 20        # dimension of matrix (note: f must be <= than m)
-    b = 4         # number of backward steps
-    delta_1 = 1   # parameter for huber function
-    delta_2 = 2
-    tau = 1       # step-size
-
-    # generating sample
-    block_corruped_size = 1
-    # np.random.seed(4)
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
-    noise_columns = np.arange(0, block_corruped_size)
-    A[noise_columns, :] = 4 * A[noise_columns, :]
-    y = np.random.rand(m)
-
-    # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
-
-    # initializing optimization problem
-    Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
-
-    # defining backward operators
-    Proxs = st.create_Proxs(Anchors)
-
-    # cases
-    cases = 3
-
-    # initialization
-    w_init = np.zeros((b, dim))
-
-    # storage
-    Vars = np.zeros((maxit, m, cases))
-    Objs = np.zeros((maxit, m, cases))
-    Spects = np.zeros((m, cases))
-
-    # defining Laplacian
-    Lap =  b * np.eye(b) - np.ones(b)
-    sLap = 0 * Lap
-
-    for f in tqdm(range(1, m + 1)):
-
-        # defining forward terms
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        # splitting forward operators
-        for cs in range(cases):
-            if heuristic:
-                F = optim.F_heuristic(f,b,betas)
-            else:
-                F = [0] + [f//(b-1)*i for i in range(1,b-1)]+  [f]
-
-            # defining N and K
-            N, K = st.create_N_and_K_optimized(F, f, b, np.diag(betas))
-
-            # computing norm of W
-            P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-            Spects[f - 1, cs] = np.linalg.norm(P, 2)
-
-            # defining operator
-            J = op.genFBO(tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F)
-
-            # optimization
-            w = np.copy(w_init)
-
-            for k in range(maxit):
-
-                # step
-                w, x = J.apply(w)
-                mean_x = np.mean(x, axis=0)
-
-                # compute objective value
-                obj = Model.objective(mean_x)
-                Objs[k, f - 1, cs] = obj
-
-                # computing variance
-                var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
-                Vars[k, f - 1, cs] = var
-
-    show.plot_experiment_4(m, cases, Vars, Objs, Spects, maxit, outliers = [1, 3])
+    show.plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus,
+                                                Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
+                                                hetereogenity, maxit)
 
 
 def experiment_portfolio_optimization(maxit=500):
     '''
     In this experiment, we test our distributed method againts other instances
-    in the literature on the portfolio optimization problem,
-    with optimized H and K
+    in the literature on the portfolio optimization problem.
     '''
 
     tau = 1
     np.random.seed(0)
 
-    # reading data and obtaining operators
+    # reading data and obtaining operators.
+    # NOTE: Turn Download=True the first time running this code. Ensure to
+    # have an API for key StockData.org.
     Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=False)
-    Proxs_one, Grads_one, betas_one, Model_one = port_opt.get_operators(1, Download=False)
 
     b = len(Proxs)
 
@@ -679,77 +481,46 @@ def experiment_portfolio_optimization(maxit=500):
     w_init = np.zeros((b, Model.dim))
 
     # computing optimal solution
-    _, _, _, x_opt = optim.DFB_optimized(Proxs, Grads, betas, w_init, 20 * maxit,
-                                         tau, Model, Compute_Dist_to_Sol=True)
+    _, _, _, x_opt = optim.SFB_plus(Proxs, Grads, betas, w_init, 20 * maxit,
+                                    tau, Model, Compute_Dist_to_Sol=True)
     Model.x_opt = x_opt
-    Model_one.x_opt = x_opt
 
     # storage
-    Vars_DFB_one = np.zeros((maxit, cases))
-    Objs_DFB_one = np.zeros((maxit, cases))
-    Dist_DFB_one = np.zeros((maxit, cases))
-
-    Vars_DFB = np.zeros((maxit, cases))
-    Objs_DFB = np.zeros((maxit, cases))
-    Dist_DFB = np.zeros((maxit, cases))
-
-    Vars_DFB_opt = np.zeros((maxit, cases))
-    Objs_DFB_opt = np.zeros((maxit, cases))
-    Dist_DFB_opt = np.zeros((maxit, cases))
-
-    Vars_ACL24 = np.zeros((maxit, cases))
-    Objs_ACL24 = np.zeros((maxit, cases))
+    Dist_aGFB = np.zeros((maxit, cases))
+    Dist_SFB_plus = np.zeros((maxit, cases))
     Dist_ACL24 = np.zeros((maxit, cases))
-
-    Vars_AMTT23 = np.zeros((maxit, cases))
-    Objs_AMTT23 = np.zeros((maxit, cases))
     Dist_AMTT23 = np.zeros((maxit, cases))
-
-    Vars_BCLN23 = np.zeros((maxit, cases))
-    Objs_BCLN23 = np.zeros((maxit, cases))
     Dist_BCLN23 = np.zeros((maxit, cases))
 
     for cs in tqdm(range(cases)):
 
-        # Distributed Forward Backward (DFB). With only one forward term
-        Vars_DFB_one[:, cs], Objs_DFB_one[:, cs], Dist_DFB_one[:, cs], _ = \
-            optim.DFB(Proxs_one, Grads_one, betas_one, w_init, maxit, tau, Model_one,
+        # Adapted Graph Forward Backward (aGFB). Our paper
+        _, _, Dist_aGFB[:, cs], _ = \
+            optim.aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
                       Compute_Dist_to_Sol=True)
 
-        # Distributed Forward Backward (DFB). Our paper
-        Vars_DFB[:, cs], Objs_DFB[:, cs], Dist_DFB[:, cs], _ = \
-            optim.DFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
-                      Compute_Dist_to_Sol=True)
-
-        # optimized Distributed Forward Backward (DFB). Our paper
-        Vars_DFB_opt[:, cs], Objs_DFB_opt[:, cs], Dist_DFB_opt[:, cs], _ = \
-            optim.DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
-                                Compute_Dist_to_Sol=True, heuristic=False)
+        # Split-Forward-Backward+ (SFB+). Our paper
+        _, _, Dist_SFB_plus[:, cs], _ = \
+            optim.SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
+                                Compute_Dist_to_Sol=True)
 
         # Artacho, Campoy, Lopez-Pastor, 2024
         betas = np.max(betas) * np.ones(4)
-        Vars_ACL24[:, cs], Objs_ACL24[:, cs], Dist_ACL24[:, cs], _ = \
+        _, _, Dist_ACL24[:, cs], _ = \
             optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
                         Compute_Dist_to_Sol=True)
 
         # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
         betas = np.max(betas) * np.ones(4)
-        Vars_AMTT23[:, cs], Objs_AMTT23[:, cs], Dist_AMTT23[:, cs], _ = \
+        _, _, Dist_AMTT23[:, cs], _ = \
             optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
                          Compute_Dist_to_Sol=True)
 
         # Bredies, Chenchene, Lorenz, Naldi, 2023
         betas = np.max(betas) * np.ones(4)
-        Vars_BCLN23[:, cs], Objs_BCLN23[:, cs], Dist_BCLN23[:, cs], _ = \
+        _, _, Dist_BCLN23[:, cs], _ = \
             optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
                          Compute_Dist_to_Sol=True)
 
-    show.plot_experiment_portopt(Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-                                Objs_DFB_one, Objs_DFB, Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                                Dist_DFB_one, Dist_DFB, Dist_DFB_opt, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
-                                x_opt, maxit)
-
-    return (Vars_DFB_one, Vars_DFB, Vars_DFB_opt, Vars_ACL24, Vars_AMTT23, Vars_BCLN23,
-            Objs_DFB_one, Objs_DFB, Objs_DFB_opt, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-            Dist_DFB_one, Dist_DFB, Dist_DFB_opt, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
-            x_opt, maxit)
+    show.plot_experiment_portopt(Dist_aGFB, Dist_SFB_plus, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
+                                  x_opt, maxit)

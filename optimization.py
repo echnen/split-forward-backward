@@ -8,8 +8,7 @@
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-#      Characterization of Nonexpansive Forward-Backward-type Algorithms with
-#      Minimal Memory Requirements,
+#      Splitting the Forward-Backward Algorithm: A Full Characterization.
 #      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -28,8 +27,7 @@
 This file contains an implementation of several methods used in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-Characterization of Nonexpansive Forward-Backward-type Algorithms with
-Minimal Memory Requirements,
+Splitting the Forward-Backward Algorithm: A Full Characterization.
 2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
 
 """
@@ -40,10 +38,10 @@ import operators as op
 import networkx as nx
 
 
-def DFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
         Compute_Dist_to_Sol=False):
     '''
-    Implements the Distributed Forward Backward (DFB) Method, introduced in
+    Implements the adapted graph forward-backward (aGFB) Method, introduced in
     Section REF.
     '''
 
@@ -56,11 +54,11 @@ def DFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    N, K, F = st.create_N_and_K_DFB(f, b)
+    N, K, F = st.create_N_and_K_aGFB(f, b)
     Lap =  b * np.eye(b) - np.ones(b)
 
     sLap =  0 * Lap
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):
@@ -88,37 +86,11 @@ def DFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def F_heuristic(f, b, betas):
-    """
-    Heuristic for finding F, accounting for cocoercivity-constants beta.
-    Tries to make sure sum is equal for the cocoercive operators
-    between each pair of consecutive resolvents
-    """
-    F = [0]
-    beta_sum = 0
-    tot_beta = sum(betas)
-    b_left = b - 1
-
-    for i in range(f):
-        if abs(beta_sum - tot_beta / b_left) <= \
-            abs(beta_sum + betas[i] - tot_beta / b_left):
-            F.append(i)
-            beta_sum = betas[i]
-        else:
-            beta_sum += betas[i]
-    F = F + [f] * (b - len(F))
-    F[-1] = f
-
-    return F
-
-
-def DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
-                  Compute_Dist_to_Sol=False, heuristic=False):
+def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
+             Compute_Dist_to_Sol=False):
     '''
-    Implements the Distributed Forward Backward (DFB) Method, introduced in
+    Implements the Split-Forward-Backward+ (DFB) Method, introduced in
     Section REF, with H and K matrices minimizing |W|_2.
-    Heuristic determines if heristic is used to generate F. If False, splits
-    evenly.
     '''
 
     # retrieving information
@@ -130,17 +102,13 @@ def DFB_optimized(Proxs, Grads, betas, w_init, maxit, tau, Model,
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    if heuristic:
-        F = F_heuristic(f, b, betas)
-    else:
-        F = [0] + [f // (b - 1) * i for i in range(1, b - 1)] + [f]
-
+    F = [0] + [f // (b - 1) * i for i in range(1, b - 1)] + [f]
     N, K = st.create_N_and_K_optimized(F, f, b, np.diag(betas))
 
     Lap =  b * np.eye(b) - np.ones(b)
 
     sLap = 0 * Lap
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):
@@ -191,7 +159,7 @@ def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
     # state graph of Artacho is equal to
     sLap = tau * np.max(betas) / 4 * Lap - \
         1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):
@@ -248,7 +216,7 @@ def AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
     Graph.add_edge(0, b - 1)
     sLap = nx.laplacian_matrix(Graph).toarray()
 
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):
@@ -301,7 +269,7 @@ def BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
     # upper/state graph has the only edge (1, b)
     sLap = 0 * Lap
 
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):
@@ -352,7 +320,37 @@ def Random_Instance(Proxs, Grads, betas, F, w_init,
     Lap =  b * np.eye(b) - np.ones(b)
 
     sLap = 0 * Lap
-    J = op.genFBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+
+    w = np.copy(w_init)
+    for k in range(maxit):
+
+        # step
+        w, x = J.apply(w)
+        mean_x = np.mean(x, axis=0)
+
+        # compute objective value
+        obj = Model.objective(mean_x)
+        Objs[k] = obj
+
+        # computing variance
+        var = np.sum((x - mean_x[np.newaxis, :]) ** 2)
+        Vars[k] = var
+
+    return Vars, Objs
+
+
+def General_Instance(Proxs, Grads, betas, F, w_init, maxit, tau, Model, Lap,
+                     sLap, N, K):
+    '''
+    Implements Algorithm 1 with general Lap, sLap, N and K.
+    '''
+
+    # storage
+    Vars = np.zeros(maxit)
+    Objs = np.zeros(maxit)
+
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
     for k in range(maxit):

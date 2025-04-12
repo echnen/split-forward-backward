@@ -1,8 +1,36 @@
 # -*- coding: utf-8 -*-
+#
+#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#                       Enis Chenchene (enis.chenchene@univie.ac.at)
+#                       Pontus Giselsson (p.g@un.com)
+#                       Emanuele Naldi (emanuele.naldi@unige.it)
+#
+#    This file is part of the example code repository for the paper:
+#
+#      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
+#      Splitting the Forward-Backward Algorithm: A Full Characterization.
+#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-Created on Sat Mar  1 13:15:15 2025
+This file contains useful functions to run the portfolio optimization
+experiment in:
 
-@author: enisc
+A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
+Splitting the Forward-Backward Algorithm: A Full Characterization.
+2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+
 """
 
 import requests
@@ -10,7 +38,7 @@ import pandas as pd
 import numpy as np
 import structures as st
 import operators as op
-
+import plots as show
 import pickle
 
 def fetch_historical_data(symbol, start_date, end_date, api_key):
@@ -39,7 +67,7 @@ def fetch_historical_data(symbol, start_date, end_date, api_key):
 def get_data():
 
     # StockData.org API key (use your own)
-    api_key = 'your_key'
+    api_key = 'your API key'
 
     # define the date range
     start_date = '2020-01-01'
@@ -58,6 +86,12 @@ def get_data():
 
     # drop rows with missing values
     pri.dropna(inplace=True)
+
+    # extract dates for plot
+    dates = pri.index.to_list()
+    dates = np.array(list(map(lambda x: f'0{x.month}.{x.year}', dates)))
+
+    # turning into numpy
     pri = pri.to_numpy()
 
     # get revenue data
@@ -77,8 +111,9 @@ def get_data():
     with open('data/dataset.npy', 'wb') as file:
         np.save(file, rev)
         np.save(file, CB_data)
+        np.save(file, dates)
 
-    return rev, CB_data
+    return rev, CB_data, dates
 
 
 def proj_halfspace(pars, level, x):
@@ -148,12 +183,6 @@ def build_operators(rev, CB_data, f):
     # simplex constraint
     Proxs.append(projection_simplex)
 
-    # defining hyperplanes constraints. Note: these should be smaller than
-    # the following values to ensure an overall decrease of at least 7%:
-    #
-    # min_reductions = .93 * np.min(np.sum(CB_data, axis=1)[:, np.newaxis] \
-    #                               / CB_data, axis=0)
-
     Reduce = [0.01, 0.01, 0.08]
     for i in range(3):
         new_carbon_lev_i = (1 - Reduce[i]) * init_carbon_lev[i]
@@ -176,12 +205,16 @@ def build_operators(rev, CB_data, f):
 def get_operators(f, Download=False):
 
     if Download:
-        rev, CB_data = get_data()
+        rev, CB_data, dates = get_data()
 
     else:
         with open('data/dataset.npy', 'rb') as file:
             rev = np.load(file)
             CB_data = np.load(file)
+            dates = np.load(file)
+
+    # showing revenues
+    show.plot_returns(rev, dates)
 
     T, dim = rev.shape
 

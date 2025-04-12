@@ -8,8 +8,7 @@
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-#      Characterization of Nonexpansive Forward-Backward-type Algorithms with
-#      Minimal Memory Requirements,
+#      Splitting the Forward-Backward Algorithm: A Full Characterization.
 #      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
 #
 #    This program is free software: you can redistribute it and/or modify
@@ -39,7 +38,7 @@ import numpy as np
 import structures as st
 
 
-class genFBO:
+class FBO:
 
     def __init__(self, tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F):
 
