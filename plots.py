@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,8 +28,9 @@ This file contains functions that are useful to generate the images in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 Splitting the Forward-Backward Algorithm: A Full Characterization.
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import numpy as np
@@ -125,7 +126,8 @@ def plot_experiment_W(m, cases, Objs, Spects, maxit):
     for f in range(m):
         for cs in range(cases):
             color = cmap(norm(Spects[f, cs]))
-            plt.semilogy(Objs[:-10, f, cs] - np.min(Objs), color=color, alpha=0.1)
+            plt.semilogy(Objs[:-10, f, cs] - np.min(Objs), color=color,
+                         alpha=0.1)
 
     # plotting performance relative to optimal heuristic
     plt.semilogy(Objs[:-10, row_min, col_min] - np.min(Objs), color='r',
@@ -136,7 +138,7 @@ def plot_experiment_W(m, cases, Objs, Spects, maxit):
     plt.xlim(0, maxit - 10)
     plt.grid()
     cbar_ax = fig.add_axes([0.38, 0.83, .5, 0.02])
-    plt.colorbar(sm, cax=cbar_ax, orientation="horizontal", label=r'$\|W\|$')
+    plt.colorbar(sm, cax=cbar_ax, orientation="horizontal", label=r'$\|W\|_2$')
     plt.grid()
     plt.savefig('results/experiment_m_obj.pdf', bbox_inches='tight')
     plt.show()
@@ -144,24 +146,26 @@ def plot_experiment_W(m, cases, Objs, Spects, maxit):
     # plotting m vs spectral norm of W
     plt.figure(figsize=(5, 5))
     plt.plot(np.arange(1, m + 1), Spects, '.', color='k')
-    plt.scatter(row_min + 1, Spects[row_min, col_min], color='r', s=20, zorder=2)
+    plt.scatter(row_min + 1, Spects[row_min, col_min], color='r', s=20,
+                zorder=2)
     plt.xlim(0, m)
     plt.xlabel(r'$m$')
-    plt.ylabel(r'$\|W\|$')
+    plt.ylabel(r'$\|W\|_2$')
     plt.grid()
     plt.savefig('results/experiment_m_sca.pdf', bbox_inches='tight')
     plt.show()
 
 
-def plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus, Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                                hetereogenity, maxit):
+def plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus,
+                                           Objs_ACL24, Objs_AMTT23,
+                                           Objs_BCLN23, hetereogenity, maxit):
 
     maxit, cases = Objs_aGFB.shape
 
     # plotting objectives
     plt.figure(figsize=(5, 5))
 
-    min_obj = min(np.min(Objs_aGFB), np.min(Objs_SFB_plus),np.min(Objs_ACL24),
+    min_obj = min(np.min(Objs_aGFB), np.min(Objs_SFB_plus), np.min(Objs_ACL24),
                   np.min(Objs_AMTT23), np.min(Objs_BCLN23))
 
     # plotting all data
@@ -177,7 +181,7 @@ def plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus, Objs_ACL24,
         plt.semilogy(gmean(Objs_aGFB - min_obj, axis=1),
                      linewidth=3, color='k', alpha=1)
         plt.semilogy(gmean(Objs_SFB_plus - min_obj, axis=1),
-                linewidth=3, color='y', alpha=1)
+                     linewidth=3, color='y', alpha=1)
 
         plt.semilogy(gmean(Objs_ACL24 - min_obj, axis=1),
                      linewidth=3, color='r', alpha=1)
@@ -194,7 +198,7 @@ def plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus, Objs_ACL24,
         plt.semilogy(gmean(Objs_ACL24 - min_obj, axis=1),
                      linewidth=3, color='r', alpha=1, label='GFB')
         plt.semilogy(gmean(Objs_AMTT23 - min_obj, axis=1),
-                     linewidth=3, color='b', alpha=1, label='RGB')
+                     linewidth=3, color='b', alpha=1, label='RFB')
         plt.semilogy(gmean(Objs_BCLN23 - min_obj, axis=1),
                      linewidth=3, color='g', alpha=1, label='SDY')
 
@@ -207,15 +211,17 @@ def plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus, Objs_ACL24,
         plt.legend()
 
     if hetereogenity == 1:
-        plt.savefig('results/experiment_comparison_toy_hom.pdf', bbox_inches='tight')
+        plt.savefig('results/experiment_comparison_toy_hom.pdf',
+                    bbox_inches='tight')
     else:
-        plt.savefig('results/experiment_comparison_toy_het.pdf', bbox_inches='tight')
+        plt.savefig('results/experiment_comparison_toy_het.pdf',
+                    bbox_inches='tight')
 
     plt.show()
 
 
-def plot_experiment_portopt(Dist_aGFB, Dist_SFB_plus, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
-                            x_opt, maxit):
+def plot_experiment_portopt(Dist_aGFB, Dist_SFB_plus, Dist_ACL24, Dist_AMTT23,
+                            Dist_BCLN23, x_opt, maxit):
 
     maxit, cases = Dist_aGFB.shape
 
@@ -259,7 +265,8 @@ def plot_returns(rev, dates):
 
     # plt.figure(figsize=(7, 4))
     for i in range(2):
-        axs[i].plot(np.flip(rev[:, i], axis=0), '-', linewidth=2, color='k', alpha=1)
+        axs[i].plot(np.flip(rev[:, i], axis=0), '-', linewidth=2, color='k',
+                    alpha=1)
         axs[i].axvline(x=0, color='b')
         axs[i].axvline(x=31, color='b')
         axs[i].axvline(x=62, color='b')

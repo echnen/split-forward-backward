@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,8 +28,9 @@ This file contains the numerical experiments in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 Splitting the Forward-Backward Algorithm: A Full Characterization.
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import numpy as np
@@ -108,7 +109,8 @@ def experiment_testing_M(maxit=100):
 
         else:
             # sampling random Laplacian
-            G = nx.connected_watts_strogatz_graph(b, np.random.randint(2, b), p=.8)
+            G = nx.connected_watts_strogatz_graph(b, np.random.randint(2, b),
+                                                  p=.8)
             Lap = nx.laplacian_matrix(G)
             Lap = Lap.toarray()
             norm = np.linalg.norm(Lap, 2)
@@ -124,7 +126,6 @@ def experiment_testing_M(maxit=100):
         Spec[cs] = np.linalg.eigh(Lap)[0][1]
 
     show.plot_experiment_Lap(Objs, Spec, cases, maxit)
-    #return Objs, Spec, cases, maxit
 
 
 def experiment_testing_P(maxit=100):
@@ -145,7 +146,6 @@ def experiment_testing_P(maxit=100):
 
     # generating sample
     block_corruped_size = 2
-    # np.random.seed(4)
     A = 2 * (np.random.rand(m, dim) - 0.5)
     noise_columns = np.random.randint(block_corruped_size, m)
     A[noise_columns, :] = 5 * A[noise_columns, :]
@@ -211,7 +211,6 @@ def experiment_testing_P(maxit=100):
 
 def experiment_testing_betas(maxit=1000):
     '''
-    NOTE Former experiment 0
     In this experiment, we test hetereogenity of data.
     '''
 
@@ -277,14 +276,11 @@ def experiment_testing_betas(maxit=1000):
             optim.Random_Instance(Proxs, Grads, betas_hom, F, w_init,
                                   maxit, tau, Model, None, None, N, K)
 
-
     show.plot_experiment_testing_betas(Objs_hom, Objs_het, cases, maxit)
 
 
 def experiment_testing_W(maxit=100):
     '''
-    NOTE: Former experiment_4
-
     In this experiment, we test the influence on the number of the spectral
     norm of W, with N and K chosen randomly and optimized.
     '''
@@ -294,14 +290,13 @@ def experiment_testing_W(maxit=100):
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
     m = 50        # dimension of matrix (note: f must be <= than m)
-    b = 15         # number of backward steps
-    delta_1 = 1   # parameter for huber function
+    b = 15        # number of backward steps
+    delta_1 = 1   # parameters for huber function
     delta_2 = 2
     tau = 1       # step-size
 
     # generating sample
     block_corruped_size = 5
-    # np.random.seed(4)
     A = 2 * (np.random.rand(m, dim) - 0.5)
     noise_columns = np.random.randint(block_corruped_size, m)
     noise_columns = np.arange(0, block_corruped_size)
@@ -328,7 +323,7 @@ def experiment_testing_W(maxit=100):
     Spects = np.zeros((m, cases))
 
     # defining Laplacian
-    Lap =  b * np.eye(b) - np.ones(b)
+    Lap = b * np.eye(b) - np.ones(b)
     sLap = 0 * Lap
 
     for f in tqdm(range(1, m + 1)):
@@ -349,17 +344,16 @@ def experiment_testing_W(maxit=100):
             P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
             Spects[f - 1, cs] = np.linalg.norm(P, 2)
 
-            _, Objs[:, f - 1, cs] = optim.General_Instance(Proxs, Grads, betas, F,
-                                                       w_init, maxit, tau,
-                                                       Model, Lap,
-                                                       sLap, N, K)
+            _, Objs[:, f - 1, cs] = optim.General_Instance(Proxs, Grads, betas,
+                                                           F, w_init, maxit,
+                                                           tau, Model, Lap,
+                                                           sLap, N, K)
 
     show.plot_experiment_W(m, cases, Objs, Spects, maxit)
 
 
 def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
     '''
-    NOTE: former experiment_2_optimized
     In this experiment, we test our distributed method againts other instances
     in the literature, with optimized H and K
     '''
@@ -370,7 +364,7 @@ def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
     dim = 2        # dimension of the problem
     m = 20         # dimension of matrix (note: f must be <= than m)
     b = 5          # number of backward steps
-    delta_1 = 1    # parameter for huber function
+    delta_1 = 1    # parameters for huber function
     delta_2 = 2
     tau = 1        # step-size
 
@@ -452,8 +446,9 @@ def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
             optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
     show.plot_experiment_comparison_toy_example(Objs_aGFB, Objs_SFB_plus,
-                                                Objs_ACL24, Objs_AMTT23, Objs_BCLN23,
-                                                hetereogenity, maxit)
+                                                Objs_ACL24, Objs_AMTT23,
+                                                Objs_BCLN23, hetereogenity,
+                                                maxit)
 
 
 def experiment_portfolio_optimization(maxit=500):
@@ -468,7 +463,7 @@ def experiment_portfolio_optimization(maxit=500):
     # reading data and obtaining operators.
     # NOTE: Turn Download=True the first time running this code. Ensure to
     # have an API for key StockData.org.
-    Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=False)
+    Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=True)
 
     b = len(Proxs)
 
@@ -520,5 +515,5 @@ def experiment_portfolio_optimization(maxit=500):
             optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
                          Compute_Dist_to_Sol=True)
 
-    show.plot_experiment_portopt(Dist_aGFB, Dist_SFB_plus, Dist_ACL24, Dist_AMTT23, Dist_BCLN23,
-                                  x_opt, maxit)
+    show.plot_experiment_portopt(Dist_aGFB, Dist_SFB_plus, Dist_ACL24,
+                                 Dist_AMTT23, Dist_BCLN23, x_opt, maxit)

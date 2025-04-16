@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,8 +28,9 @@ This file contains an implementation of several methods used in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 Splitting the Forward-Backward Algorithm: A Full Characterization.
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import numpy as np
@@ -39,10 +40,10 @@ import networkx as nx
 
 
 def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
-        Compute_Dist_to_Sol=False):
+         Compute_Dist_to_Sol=False):
     '''
     Implements the adapted graph forward-backward (aGFB) Method, introduced in
-    Section REF.
+    Section 5.
     '''
 
     # retrieving information
@@ -55,9 +56,9 @@ def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
     Dist = np.zeros(maxit)
 
     N, K, F = st.create_N_and_K_aGFB(f, b)
-    Lap =  b * np.eye(b) - np.ones(b)
+    Lap = b * np.eye(b) - np.ones(b)
 
-    sLap =  0 * Lap
+    sLap = 0 * Lap
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
     w = np.copy(w_init)
@@ -90,7 +91,7 @@ def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
              Compute_Dist_to_Sol=False):
     '''
     Implements the Split-Forward-Backward+ (DFB) Method, introduced in
-    Section REF, with H and K matrices minimizing |W|_2.
+    Section 6, with H and K matrices minimizing |W|_2.
     '''
 
     # retrieving information
@@ -105,7 +106,7 @@ def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
     F = [0] + [f // (b - 1) * i for i in range(1, b - 1)] + [f]
     N, K = st.create_N_and_K_optimized(F, f, b, np.diag(betas))
 
-    Lap =  b * np.eye(b) - np.ones(b)
+    Lap = b * np.eye(b) - np.ones(b)
 
     sLap = 0 * Lap
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
@@ -185,7 +186,6 @@ def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
 
     else:
         return Vars, Objs
-
 
 
 def AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
@@ -314,10 +314,10 @@ def Random_Instance(Proxs, Grads, betas, F, w_init,
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
 
-    if type(Range_N) != int and Range_N != None:
+    if type(Range_N) is not int and Range_N is not None:
         N, K = st.create_N_and_K(F, f, b, Range_N, Range_K)
 
-    Lap =  b * np.eye(b) - np.ones(b)
+    Lap = b * np.eye(b) - np.ones(b)
 
     sLap = 0 * Lap
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)

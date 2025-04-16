@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,10 +28,10 @@ This file contains an implementation of the general forward-backward operator.
 For details see:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-Characterization of Nonexpansive Forward-Backward-type Algorithms with
-Minimal Memory Requirements,
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+Splitting the Forward-Backward Algorithm: A Full Characterization.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import numpy as np
@@ -95,7 +95,6 @@ class Model_Test:
         self.delta_1 = delta_1
         self.delta_2 = delta_2
 
-
     def objective(self, x):
 
         fidelity = st.hub_flat(self.delta_1, self.delta_2, self.A @ x - self.y)
@@ -115,11 +114,9 @@ class Model_Portfolio:
         self.dim = dim
         self.x_opt = x_opt
 
-
     def objective(self, x):
 
         return .5 * np.sum(x * (self.Cov @ x)) - np.sum(self.mean_rev * x)
-
 
     def distance_to_solution(self, x):
 

@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -24,12 +24,13 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-Run this script to reproduce all numerical experiments in Section REF of:
+Run this script to reproduce all numerical experiments in Section 6 of:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 Splitting the Forward-Backward Algorithm: A Full Characterization.
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import experiments as exp
@@ -37,7 +38,7 @@ import pathlib
 
 if __name__ == '__main__':
 
-    # pathlib.Path("results").mkdir(parents=True, exist_ok=True)
+    pathlib.Path("results").mkdir(parents=True, exist_ok=True)
 
     print('Running Experiment 1:\nTesting the influence of M.')
     exp.experiment_testing_M(maxit=100)

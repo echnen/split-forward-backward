@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 #      Splitting the Forward-Backward Algorithm: A Full Characterization.
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@ experiment in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
 Splitting the Forward-Backward Algorithm: A Full Characterization.
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import requests
@@ -39,7 +40,7 @@ import numpy as np
 import structures as st
 import operators as op
 import plots as show
-import pickle
+
 
 def fetch_historical_data(symbol, start_date, end_date, api_key):
     '''
@@ -82,7 +83,8 @@ def get_data():
     # fetch data for each ticker
     for ticker in tickers:
         print(f'Retrieving data for: {ticker}')
-        pri[ticker] = fetch_historical_data(ticker, start_date, end_date, api_key)
+        pri[ticker] = fetch_historical_data(ticker, start_date, end_date,
+                                            api_key)
 
     # drop rows with missing values
     pri.dropna(inplace=True)
@@ -99,12 +101,12 @@ def get_data():
     rev = rev / pri[:-1, :] * 100
 
     # carbon intensity data (Le Guenedal and Roncalli 2022)
-    CB_data = np.array([[0.460, 31.614, 44.275],    # Alphabet
-                        [20.533, 19.606, 71.491],   # Amazon
-                        [0.194, 3.314, 106.156],    # Apple
-                        [177.714, 18.783, 375.077], # BP
-                        [0.901, 28.262, 47.500],    # Microsoft
-                        [1.909, 7.216, 94.277]      # Netflix
+    CB_data = np.array([[0.460, 31.614, 44.275],     # Alphabet
+                        [20.533, 19.606, 71.491],    # Amazon
+                        [0.194, 3.314, 106.156],     # Apple
+                        [177.714, 18.783, 375.077],  # BP
+                        [0.901, 28.262, 47.500],     # Microsoft
+                        [1.909, 7.216, 94.277]       # Netflix
                         ])
 
     # saving data

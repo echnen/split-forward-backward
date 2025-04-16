@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 #
-#    Copyright (C) 2025 Anton Akerman (a.a@b.com)
+#    Copyright (C) 2025 Anton Akerman (anton.akerman@control.lth.se)
 #                       Enis Chenchene (enis.chenchene@univie.ac.at)
-#                       Pontus Giselsson (p.g@un.com)
+#                       Pontus Giselsson (pontusg@control.lth.se)
 #                       Emanuele Naldi (emanuele.naldi@unige.it)
 #
 #    This file is part of the example code repository for the paper:
 #
 #      A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-#      Characterization of Nonexpansive Forward-Backward-type Algorithms with
-#      Minimal Memory Requirements,
-#      2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+#      Splitting the Forward-Backward Algorithm: A Full Characterization.
+#      2025. DOI: 10.48550/arXiv.2504.10999.
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,10 +27,10 @@
 This file contains useful tools to reproduce the numerical experiments in:
 
 A. Akerman, E. Chenchene, P. Giselsson, E. Naldi.
-Characterization of Nonexpansive Forward-Backward-type Algorithms with
-Minimal Memory Requirements,
-2025. DOI: XX.YYYYY/arXiv.XXXX.YYYYY.
+Splitting the Forward-Backward Algorithm: A Full Characterization.
+2025. DOI: 10.48550/arXiv.2504.10999.
 
+For any comment, please contact: enis.chenchene@gmail.com
 """
 
 import numpy as np
@@ -86,7 +85,8 @@ def create_Proxs(Anchors):
 
 def create_grad_function_hub_flat(delta_1, delta_2, A_j, y_j):
 
-    return lambda x: A_j.T @ np.array(dhub_flat(delta_1, delta_2, A_j @ x - y_j), ndmin=1)
+    return lambda x: A_j.T @ np.array(dhub_flat(delta_1, delta_2,
+                                                A_j @ x - y_j), ndmin=1)
 
 
 def create_Grads_hub_flat(delta_1, delta_2, f, A, y):
@@ -188,15 +188,15 @@ def create_N_and_K_optimized(F, f, b, beta_diag):
 
     K = cp.Variable((f, b))
     N = cp.Variable((b, f))
-    constraints =[K @ np.ones((b, 1)) == np.ones((f, 1)),
-                  N.T @ np.ones((b, 1)) == np.ones((f, 1))]
+    constraints = [K @ np.ones((b, 1)) == np.ones((f, 1)),
+                   N.T @ np.ones((b, 1)) == np.ones((f, 1))]
 
     for i in range(b):
         for j in range(f):
             if j >= F[i]:
-                constraints.append(N[i,j] == 0)
+                constraints.append(N[i, j] == 0)
             else:
-                constraints.append(K[j,i] == 0)
+                constraints.append(K[j, i] == 0)
 
     prob = cp.Problem(cp.Minimize(cp.norm2(np.sqrt(beta_diag) @ (N.T - K))),
                       constraints)
@@ -261,7 +261,8 @@ def create_N_and_K_AMTT23(f, b):
 
     maximum_forward_terms = b - 1
     if f > maximum_forward_terms:
-        raise Exception("In Example AMTT23, f must be equal or lower than b - 1")
+        raise Exception("In Example AMTT23, f must be equal or lower than" +
+                        "b - 1")
 
     if f < maximum_forward_terms:
         # deleting some rows of N and K to match the number of forward terms
@@ -336,7 +337,8 @@ def dhub_flat(delta_1, delta_2, z):
     out = np.copy(z)
     middle_range = (delta_1 <= norms) * (norms <= delta_2)
 
-    out[middle_range] = np.sign(out[middle_range]) * (norms[middle_range] - delta_1)
+    out[middle_range] = np.sign(out[middle_range]) * (norms[middle_range]
+                                                      - delta_1)
     out[norms < delta_1] = 0 * out[norms < delta_1]
     out[norms > delta_2] = (delta_2 - delta_1) * np.sign(out[norms > delta_2])
 
