@@ -39,8 +39,12 @@ import structures as st
 
 
 class FBO:
+    '''
+    Implements an instance of a forward-backward operator.
+    Note: Only difference with Algorithm 1 is that P is PP^T.
+    '''
 
-    def __init__(self, tau, Proxs, Grads, dim, betas, Lap, sLap, N, K, F):
+    def __init__(self, tau, Proxs, Grads, dim, betas, Lap, P, N, K, F):
 
         self.tau = tau
         self.Proxs = Proxs
@@ -50,24 +54,23 @@ class FBO:
         self.F = F
         self.N = N
         self.K = K
-        self.b = len(Proxs)
-        self.f = len(Grads)
+        self.n = len(Proxs)
+        self.m = len(Grads)
 
         # building stL
-        P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
+        W = 1 / 2 * (N - K.T) @ np.diag(betas) @ (N.T - K)
 
-        self.stL = -2 * (np.tril(Lap, k=-1) + np.tril(sLap, k=-1)
-                         + np.tril(P, k=-1))
-        self.diag = np.diag(Lap + sLap + P)
+        self.S = np.tril(Lap, k=-1) + np.tril(P, k=-1) + np.tril(W, k=-1)
+        self.diag = 2 / np.diag(self.S)
 
-    def apply(self, w):
+    def apply(self, z):
 
         x = np.zeros((self.b, self.dim))
 
         for i in range(self.b):
 
             # evaluating forward steps
-            forward_i = np.zeros((self.f, self.dim))
+            forward_i = np.zeros((self.m, self.dim))
             in_forward_i = self.K[:self.F[i], :] @ x
 
             for j in range(self.F[i]):
@@ -76,12 +79,12 @@ class FBO:
             forward_i = self.N[i, :] @ forward_i
 
             # evaluating backward steps
-            in_prox_i = (self.stL[i, :] @ x + w[i, :]
-                         - self.tau * forward_i) / self.diag[i]
+            in_prox_i = (self.S[i, :] @ x + z[i, :]
+                         - self.tau * forward_i) * self.diag[i]
 
-            x[i, :] = self.Proxs[i](self.tau / self.diag[i], in_prox_i)
+            x[i, :] = self.Proxs[i](self.tau * self.diag[i], in_prox_i)
 
-        return w - self.Lap @ x, x
+        return z - .5 * self.Lap @ x, x
 
 
 class Model_Test:

@@ -39,7 +39,7 @@ import operators as op
 import networkx as nx
 
 
-def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def aGFB(Proxs, Grads, betas, z_init, maxit, tau, Model,
          Compute_Dist_to_Sol=False):
     '''
     Implements the adapted graph forward-backward (aGFB) Method, introduced in
@@ -47,25 +47,25 @@ def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    N, K, F = st.create_N_and_K_aGFB(f, b)
-    Lap = b * np.eye(b) - np.ones(b)
+    N, K, F = st.create_N_and_K_aGFB(m, n)
+    Lap = n * np.eye(n) - np.ones(n)
 
-    sLap = 0 * Lap
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    P = 0 * Lap
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
-    w = np.copy(w_init)
+    z = np.copy(z_init)
     for k in range(maxit):
 
         # step
-        w, x = J.apply(w)
+        z, x = J.apply(z)
         mean_x = np.mean(x, axis=0)
 
         # compute objective value
@@ -87,7 +87,7 @@ def aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def SFB_plus(Proxs, Grads, betas, z_init, maxit, tau, Model,
              Compute_Dist_to_Sol=False):
     '''
     Implements the Split-Forward-Backward+ (DFB) Method, introduced in
@@ -95,27 +95,27 @@ def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    F = [0] + [f // (b - 1) * i for i in range(1, b - 1)] + [f]
-    N, K = st.create_N_and_K_optimized(F, f, b, np.diag(betas))
+    F = [0] + [m // (n - 1) * i for i in range(1, n - 1)] + [m]
+    N, K = st.create_N_and_K_optimized(F, m, n, np.diag(betas))
 
-    Lap = b * np.eye(b) - np.ones(b)
+    Lap = n * np.eye(n) - np.ones(n)
 
-    sLap = 0 * Lap
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    P = 0 * Lap
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
-    w = np.copy(w_init)
+    z = np.copy(z_init)
     for k in range(maxit):
 
         # step
-        w, x = J.apply(w)
+        z, x = J.apply(z)
         mean_x = np.mean(x, axis=0)
 
         # compute objective value
@@ -137,7 +137,7 @@ def SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def ACL24(Proxs, Grads, betas, z_init, maxit, tau, Model,
           Compute_Dist_to_Sol=False):
     '''
     Implements the Forward Backward Method, introduced in
@@ -145,8 +145,8 @@ def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
@@ -154,15 +154,15 @@ def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
     Dist = np.zeros(maxit)
 
     # forward an backward structures
-    N, K, F = st.create_N_and_K_ACL24(f, b)
-    Lap = b * np.eye(b) - np.ones(b)
+    N, K, F = st.create_N_and_K_ACL24(m, n)
+    Lap = n * np.eye(n) - np.ones(n)
 
     # state graph of Artacho is equal to
-    sLap = tau * np.max(betas) / 4 * Lap - \
+    P = tau * np.max(betas) / 4 * Lap - \
         1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
-    w = np.copy(w_init)
+    w = np.copy(z_init)
     for k in range(maxit):
 
         # step
@@ -188,7 +188,7 @@ def ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def AMTT23(Proxs, Grads, betas, z_init, maxit, tau, Model,
            Compute_Dist_to_Sol=False):
     '''
     Implements the Forward Backward Method, introduced in
@@ -196,29 +196,29 @@ def AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    N, K, F = st.create_N_and_K_AMTT23(f, b)
+    N, K, F = st.create_N_and_K_AMTT23(m, n)
 
     # laplacian of the path graph
-    Graph = nx.path_graph(b)
+    Graph = nx.path_graph(n)
     Lap = nx.laplacian_matrix(Graph).toarray()
 
-    # upper/state graph has the only edge (0, b)
+    # upper/state graph has the only edge (1, n)
     Graph = nx.Graph()
-    Graph.add_nodes_from(range(b - 1))
-    Graph.add_edge(0, b - 1)
-    sLap = nx.laplacian_matrix(Graph).toarray()
+    Graph.add_nodes_from(range(n - 1))
+    Graph.add_edge(0, n - 1)
+    P = nx.laplacian_matrix(Graph).toarray()
 
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
-    w = np.copy(w_init)
+    w = np.copy(z_init)
     for k in range(maxit):
 
         # step
@@ -244,7 +244,7 @@ def AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
+def BCLN23(Proxs, Grads, betas, z_init, maxit, tau, Model,
            Compute_Dist_to_Sol=False):
     '''
     Implements the Sequential Forward Backward Method, introduced in
@@ -271,7 +271,7 @@ def BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
 
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
-    w = np.copy(w_init)
+    w = np.copy(z_init)
     for k in range(maxit):
 
         # step
@@ -297,7 +297,7 @@ def BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model,
         return Vars, Objs
 
 
-def Random_Instance(Proxs, Grads, betas, F, w_init,
+def Random_Instance(Proxs, Grads, betas, F, z_init,
                     maxit, tau, Model, Range_N=0, Range_K=0, N=0, K=0):
     '''
     Implements Algorithm 1 with random instances of N and K with elements
@@ -322,7 +322,7 @@ def Random_Instance(Proxs, Grads, betas, F, w_init,
     sLap = 0 * Lap
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
-    w = np.copy(w_init)
+    w = np.copy(z_init)
     for k in range(maxit):
 
         # step
@@ -340,7 +340,7 @@ def Random_Instance(Proxs, Grads, betas, F, w_init,
     return Vars, Objs
 
 
-def General_Instance(Proxs, Grads, betas, F, w_init, maxit, tau, Model, Lap,
+def General_Instance(Proxs, Grads, betas, F, z_init, maxit, tau, Model, Lap,
                      sLap, N, K):
     '''
     Implements Algorithm 1 with general Lap, sLap, N and K.
@@ -352,7 +352,7 @@ def General_Instance(Proxs, Grads, betas, F, w_init, maxit, tau, Model, Lap,
 
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
 
-    w = np.copy(w_init)
+    w = np.copy(z_init)
     for k in range(maxit):
 
         # step
