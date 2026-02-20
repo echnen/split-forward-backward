@@ -44,7 +44,7 @@ class FBO:
     Note: Only difference with Algorithm 1 is that P is PP^T.
     '''
 
-    def __init__(self, tau, Proxs, Grads, dim, betas, Lap, P, N, K, F):
+    def __init__(self, tau, Proxs, Grads, dim, betas, Lap, P, H, K, F):
 
         self.tau = tau
         self.Proxs = Proxs
@@ -52,22 +52,22 @@ class FBO:
         self.dim = dim
         self.Lap = Lap
         self.F = F
-        self.N = N
+        self.N = H
         self.K = K
         self.n = len(Proxs)
         self.m = len(Grads)
 
         # building stL
-        W = 1 / 2 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-
-        self.S = np.tril(Lap, k=-1) + np.tril(P, k=-1) + np.tril(W, k=-1)
-        self.diag = 2 / np.diag(self.S)
+        W = tau / 2 * (H - K.T) @ np.diag(betas) @ (H.T - K)
+        S = Lap + P + W
+        self.lowS = np.tril(S, k=-1)
+        self.diag = 2 / np.diag(S)
 
     def apply(self, z):
 
-        x = np.zeros((self.b, self.dim))
+        x = np.zeros((self.n, self.dim))
 
-        for i in range(self.b):
+        for i in range(self.n):
 
             # evaluating forward steps
             forward_i = np.zeros((self.m, self.dim))
@@ -79,12 +79,12 @@ class FBO:
             forward_i = self.N[i, :] @ forward_i
 
             # evaluating backward steps
-            in_prox_i = (self.S[i, :] @ x + z[i, :]
+            in_prox_i = (- self.lowS[i, :] @ x + z[i, :]
                          - self.tau * forward_i) * self.diag[i]
 
             x[i, :] = self.Proxs[i](self.tau * self.diag[i], in_prox_i)
 
-        return z - .5 * self.Lap @ x, x
+        return z - 0.5 * self.Lap @ x, x
 
 
 class Model_Test:

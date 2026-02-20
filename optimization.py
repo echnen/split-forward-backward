@@ -59,6 +59,7 @@ def aGFB(Proxs, Grads, betas, z_init, maxit, tau, Model,
     Lap = n * np.eye(n) - np.ones(n)
 
     P = 0 * Lap
+
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
     z = np.copy(z_init)
@@ -158,8 +159,8 @@ def ACL24(Proxs, Grads, betas, z_init, maxit, tau, Model,
     Lap = n * np.eye(n) - np.ones(n)
 
     # state graph of Artacho is equal to
-    P = tau * np.max(betas) / 4 * Lap - \
-        1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
+    P = tau * (np.max(betas) / 2 * Lap -
+               1 / 2 * (N - K.T) @ np.diag(betas) @ (N.T - K))
     J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
     w = np.copy(z_init)
@@ -252,24 +253,24 @@ def BCLN23(Proxs, Grads, betas, z_init, maxit, tau, Model,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
     Dist = np.zeros(maxit)
 
-    N, K, F = st.create_N_and_K_AMTT23(f, b)
+    N, K, F = st.create_N_and_K_AMTT23(m, n)
 
     # laplacian of the path graph
-    Graph = nx.path_graph(b)
+    Graph = nx.path_graph(n)
     Lap = nx.laplacian_matrix(Graph).toarray()
 
     # upper/state graph has the only edge (1, b)
-    sLap = 0 * Lap
+    P = 0 * Lap
 
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
     w = np.copy(z_init)
     for k in range(maxit):
@@ -307,20 +308,20 @@ def Random_Instance(Proxs, Grads, betas, F, z_init,
     '''
 
     # retrieving information
-    f = len(Grads)
-    b = len(Proxs)
+    m = len(Grads)
+    n = len(Proxs)
 
     # storage
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
 
     if type(Range_N) is not int and Range_N is not None:
-        N, K = st.create_N_and_K(F, f, b, Range_N, Range_K)
+        N, K = st.create_N_and_K(F, m, n, Range_N, Range_K)
 
-    Lap = b * np.eye(b) - np.ones(b)
+    Lap = n * np.eye(n) - np.ones(n)
 
-    sLap = 0 * Lap
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    P = 0 * Lap
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
     w = np.copy(z_init)
     for k in range(maxit):
@@ -341,7 +342,7 @@ def Random_Instance(Proxs, Grads, betas, F, z_init,
 
 
 def General_Instance(Proxs, Grads, betas, F, z_init, maxit, tau, Model, Lap,
-                     sLap, N, K):
+                     P, N, K):
     '''
     Implements Algorithm 1 with general Lap, sLap, N and K.
     '''
@@ -350,7 +351,7 @@ def General_Instance(Proxs, Grads, betas, F, z_init, maxit, tau, Model, Lap,
     Vars = np.zeros(maxit)
     Objs = np.zeros(maxit)
 
-    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, sLap, N, K, F)
+    J = op.FBO(tau, Proxs, Grads, Model.dim, betas, Lap, P, N, K, F)
 
     w = np.copy(z_init)
     for k in range(maxit):

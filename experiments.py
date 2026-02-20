@@ -52,23 +52,23 @@ def experiment_testing_M(maxit=100):
 
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
-    m = 10        # dimension of matrix (note: f must be <= than m)
-    b = 20        # number of backward steps
-    f = 10        # number of forward terms
+    dim_mat = 10        # dimension of matrix (note: f must be <= than m)
+    n = 20        # number of backward steps
+    m = 10        # number of forward terms
     delta_1 = 1   # parameter for huber function
     delta_2 = 2
-    tau = 1       # step-size
+    tau = 1e-1       # step-size
 
     # generating sample
     block_corruped_size = 2
     # np.random.seed(4)
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
+    A = 2 * (np.random.rand(dim_mat, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, dim_mat)
     A[noise_columns, :] = 5 * A[noise_columns, :]
-    y = np.random.rand(m)
+    y = np.random.rand(dim_mat)
 
     # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
+    Anchors = np.random.normal(0, 5, size=(dim, n))
 
     # initializing optimization problem
     Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
@@ -80,13 +80,13 @@ def experiment_testing_M(maxit=100):
     cases = 200
 
     # initialization
-    w_init = np.zeros((b, dim))
+    z_init = np.zeros((n, dim))
 
     # defining N and K (randomly)
-    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-    F = np.sort(np.random.randint(1, f + 1, b - 2))
-    F = np.hstack(([0], F, [f]))
-    N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+    F = np.sort(np.random.randint(1, m + 1, n - 2))
+    F = np.hstack(([0], F, [m]))
+    N, K = st.create_N_and_K(F, m, n, [0, 1], [0, 1])
 
     # storage
     Vars = np.zeros((maxit, cases))
@@ -96,12 +96,12 @@ def experiment_testing_M(maxit=100):
     for cs in tqdm(range(cases)):
 
         if cs == 0:
-            Lap = b * np.eye(b) - np.ones(b)
+            Lap = 0.5 * (n * np.eye(n) - np.ones(n))
             norm = np.linalg.norm(Lap, 2)
             Lap = Lap / norm
 
         elif cs >= 1 and cs < 20:
-            Lap = np.random.rand(b, b - 1)
+            Lap = np.random.rand(n, n - 1)
             Lap = Lap - np.mean(Lap, axis=0)[np.newaxis, :]
             Lap = Lap @ Lap.T
             norm = np.linalg.norm(Lap, 2)
@@ -109,19 +109,19 @@ def experiment_testing_M(maxit=100):
 
         else:
             # sampling random Laplacian
-            G = nx.connected_watts_strogatz_graph(b, np.random.randint(2, b),
+            G = nx.connected_watts_strogatz_graph(n, np.random.randint(2, n),
                                                   p=.8)
             Lap = nx.laplacian_matrix(G)
             Lap = Lap.toarray()
             norm = np.linalg.norm(Lap, 2)
             Lap = Lap / norm
 
-        sLap = 0 * Lap
+        P = 0 * Lap
 
         # running the two methods
         Vars[:, cs], Objs[:, cs] = \
-            optim.General_Instance(Proxs, Grads, betas, F, w_init,
-                                   maxit, tau, Model, Lap, sLap, N, K)
+            optim.General_Instance(Proxs, Grads, betas, F, z_init,
+                                   maxit, tau, Model, Lap, P, N, K)
 
         Spec[cs] = np.linalg.eigh(Lap)[0][1]
 
@@ -137,22 +137,22 @@ def experiment_testing_P(maxit=100):
 
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
-    m = 10        # dimension of matrix (note: f must be <= than m)
-    b = 20        # number of backward steps
-    f = 10        # number of forward terms
+    dim_mat = 10        # dimension of matrix (note: f must be <= than m)
+    n = 20        # number of backward steps
+    m = 10        # number of forward terms
     delta_1 = 1   # parameter for huber function
     delta_2 = 2
     tau = 1       # step-size
 
     # generating sample
     block_corruped_size = 2
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
+    A = 2 * (np.random.rand(dim_mat, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, dim_mat)
     A[noise_columns, :] = 5 * A[noise_columns, :]
-    y = np.random.rand(m)
+    y = np.random.rand(dim_mat)
 
     # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
+    Anchors = np.random.normal(0, 5, size=(dim, n))
 
     # initializing optimization problem
     Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
@@ -164,16 +164,16 @@ def experiment_testing_P(maxit=100):
     cases = 200
 
     # initialization
-    w_init = np.zeros((b, dim))
+    z_init = np.zeros((n, dim))
 
     # defining N and K (randomly)
-    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-    F = np.sort(np.random.randint(1, f + 1, b - 2))
-    F = np.hstack(([0], F, [f]))
-    N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+    Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+    F = np.sort(np.random.randint(1, m + 1, n - 2))
+    F = np.hstack(([0], F, [m]))
+    N, K = st.create_N_and_K(F, m, n, [0, 1], [0, 1])
 
     # defining Lap (randomly)
-    G = nx.connected_watts_strogatz_graph(b, b - 2, p=.8, seed=0)
+    G = nx.connected_watts_strogatz_graph(n, n - 2, p=.8, seed=0)
     Lap = nx.laplacian_matrix(G)
     Lap = Lap.toarray()
     norm = np.linalg.norm(Lap, 2)
@@ -189,19 +189,19 @@ def experiment_testing_P(maxit=100):
 
         if cs == 0:
             new_norm = 0
-            sLap = new_norm * Lap
+            P = new_norm * Lap
         else:
-            sLap = np.random.rand(b, b - 1)
-            sLap = sLap - np.mean(sLap, axis=0)[np.newaxis, :]
-            sLap = sLap @ sLap.T
-            old_norm = np.linalg.norm(sLap, 2)
+            P = np.random.rand(n, n - 1)
+            P = P - np.mean(P, axis=0)[np.newaxis, :]
+            P = P @ P.T
+            old_norm = np.linalg.norm(P, 2)
             new_norm = np.random.rand()
-            sLap = new_norm * sLap / old_norm
+            P = new_norm * P / old_norm
 
         # running the two methods
         Vars[:, cs], Objs[:, cs] = \
-            optim.General_Instance(Proxs, Grads, betas, F, w_init,
-                                   maxit, tau, Model, Lap, sLap, N, K)
+            optim.General_Instance(Proxs, Grads, betas, F, z_init,
+                                   maxit, tau, Model, Lap, P, N, K)
 
         Spec[cs] = new_norm
 
@@ -218,9 +218,9 @@ def experiment_testing_betas(maxit=1000):
 
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
-    m = 20        # dimension of matrix (note: f must be <= than m)
-    b = 4         # number of backward steps
-    f = 15        # number of forward terms
+    dim_mat = 20  # dimension of matrix (note: f must be <= than m)
+    n = 4         # number of backward steps
+    m = 15        # number of forward terms
     delta_1 = 1   # parameter for huber function
     delta_2 = 2
     tau = 1       # step-size
@@ -228,13 +228,13 @@ def experiment_testing_betas(maxit=1000):
     # generating sample
     block_corruped_size = 2
     # np.random.seed(4)
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
+    A = 2 * (np.random.rand(dim_mat, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, dim_mat)
     A[noise_columns, :] = 5 * A[noise_columns, :]
-    y = np.random.rand(m)
+    y = np.random.rand(dim_mat)
 
     # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
+    Anchors = np.random.normal(0, 5, size=(dim, n))
 
     # initializing optimization problem
     Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
@@ -246,7 +246,7 @@ def experiment_testing_betas(maxit=1000):
     cases = 20
 
     # initialization
-    w_init = np.zeros((b, dim))
+    w_init = np.zeros((n, dim))
 
     # storage
     Vars_hom = np.zeros((maxit, cases))
@@ -258,14 +258,14 @@ def experiment_testing_betas(maxit=1000):
     for cs in tqdm(range(cases)):
 
         # defining forward terms
-        Grads, betas_het = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas_hom = np.max(betas_het) * np.ones(f)
+        Grads, betas_het = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+        betas_hom = np.max(betas_het) * np.ones(m)
 
-        F = np.sort(np.random.randint(1, f + 1, b - 2))
-        F = np.hstack(([0], F, [f]))
+        F = np.sort(np.random.randint(1, m + 1, n - 2))
+        F = np.hstack(([0], F, [m]))
 
         # defining N and K with positive weights
-        N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+        N, K = st.create_N_and_K(F, m, n, [0, 1], [0, 1])
 
         # running the two methods
         Vars_het[:, cs], Objs_het[:, cs] = \
@@ -289,22 +289,22 @@ def experiment_testing_W(maxit=100):
 
     # problem and algorithm's parameters
     dim = 2       # dimension of the problem
-    m = 50        # dimension of matrix (note: f must be <= than m)
-    b = 15        # number of backward steps
+    dim_mat = 50  # dimension of matrix (note: f must be <= than m)
+    n = 15        # number of backward steps
     delta_1 = 1   # parameters for huber function
     delta_2 = 2
     tau = 1       # step-size
 
     # generating sample
     block_corruped_size = 5
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
+    A = 2 * (np.random.rand(dim_mat, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, dim_mat)
     noise_columns = np.arange(0, block_corruped_size)
     A[noise_columns, :] = 10 * A[noise_columns, :]
-    y = np.random.rand(m)
+    y = np.random.rand(dim_mat)
 
     # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
+    Anchors = np.random.normal(0, 5, size=(dim, n))
 
     # initializing optimization problem
     Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
@@ -316,40 +316,40 @@ def experiment_testing_W(maxit=100):
     cases = 10
 
     # initialization
-    w_init = np.zeros((b, dim))
+    w_init = np.zeros((n, dim))
 
     # storage
-    Objs = np.zeros((maxit, m, cases))
-    Spects = np.zeros((m, cases))
+    Objs = np.zeros((maxit, dim_mat, cases))
+    Spects = np.zeros((dim_mat, cases))
 
     # defining Laplacian
-    Lap = b * np.eye(b) - np.ones(b)
-    sLap = 0 * Lap
+    Lap = n * np.eye(n) - np.ones(n)
+    P = 0 * Lap
 
-    for f in tqdm(range(1, m + 1)):
+    for m in tqdm(range(1, dim_mat + 1)):
 
         # defining forward terms
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
 
         # splitting forward operators
         for cs in range(cases):
 
-            F = np.sort(np.random.randint(1, f + 1, b - 2))
-            F = np.hstack(([0], F, [f]))
+            F = np.sort(np.random.randint(1, m + 1, n - 2))
+            F = np.hstack(([0], F, [m]))
 
             # defining N and K (randomly)
-            N, K = st.create_N_and_K(F, f, b, [0, 1], [0, 1])
+            N, K = st.create_N_and_K(F, m, n, [0, 1], [0, 1])
 
             # computing norm of W
             P = 1 / 4 * (N - K.T) @ np.diag(betas) @ (N.T - K)
-            Spects[f - 1, cs] = np.linalg.norm(P, 2)
+            Spects[m - 1, cs] = np.linalg.norm(P, 2)
 
-            _, Objs[:, f - 1, cs] = optim.General_Instance(Proxs, Grads, betas,
+            _, Objs[:, m - 1, cs] = optim.General_Instance(Proxs, Grads, betas,
                                                            F, w_init, maxit,
                                                            tau, Model, Lap,
-                                                           sLap, N, K)
+                                                           P, N, K)
 
-    show.plot_experiment_W(m, cases, Objs, Spects, maxit)
+    show.plot_experiment_W(dim_mat, cases, Objs, Spects, maxit)
 
 
 def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
@@ -362,21 +362,20 @@ def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
 
     # problem and algorithm's parameters
     dim = 2        # dimension of the problem
-    m = 20         # dimension of matrix (note: f must be <= than m)
-    b = 5          # number of backward steps
+    dim_mat = 20         # dimension of matrix (note: f must be <= than m)
+    n = 5          # number of backward steps
     delta_1 = 1    # parameters for huber function
     delta_2 = 2
-    tau = 1        # step-size
 
     # generating sample
     block_corruped_size = 2
-    A = 2 * (np.random.rand(m, dim) - 0.5)
-    noise_columns = np.random.randint(block_corruped_size, m)
+    A = 2 * (np.random.rand(dim_mat, dim) - 0.5)
+    noise_columns = np.random.randint(block_corruped_size, dim_mat)
     A[noise_columns, :] = hetereogenity * A[noise_columns, :]
-    y = np.random.rand(m)
+    y = np.random.rand(dim_mat)
 
     # generating anchor points
-    Anchors = np.random.normal(0, 5, size=(dim, b))
+    Anchors = np.random.normal(0, 5, size=(dim, n))
 
     # initializing optimization problem
     Model = op.Model_Test(dim, A, y, Anchors, delta_1, delta_2)
@@ -388,7 +387,7 @@ def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
     cases = 20
 
     # initialization
-    w_init = np.zeros((b, dim))
+    w_init = np.zeros((n, dim))
 
     # storage
     Vars_aGFB = np.zeros((maxit, cases))
@@ -408,40 +407,46 @@ def experiment_comparison_toy_example(hetereogenity=10, maxit=500):
 
     for cs in tqdm(range(cases)):
 
-        # Adapted Graph Forward-Backward (aGFB). Our paper
-        if cs == 0:
-            f = int(b * (b - 1) / 2)
-        else:
-            f = np.random.randint(1, b * (b - 1) / 2)
 
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
+        # Adapted Graph Forward-Backward (aGFB). Our paper
+        tau = 5 * np.random.rand()
+        if cs == 0:
+            m = int(n * (n - 1) / 2)
+        else:
+            m = np.random.randint(1, n * (n - 1) / 2)
+
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
         Vars_aGFB[:, cs], Objs_aGFB[:, cs] = \
             optim.aGFB(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Split-Forward-Backward+ (SFB+). Our paper
-        f = b - 1
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
+        tau = 5 * np.random.rand()
+        m = n - 1
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
         Vars_SFB_plus[:, cs], Objs_SFB_plus[:, cs] = \
             optim.SFB_plus(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Campoy, Lopez-Pastor, 2024
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas = np.max(betas) * np.ones(f)
+        tau = 1 * np.random.rand()
+        m = np.random.randint(1, n - 1 + 1)
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+        betas = np.max(betas) * np.ones(m)
         Vars_ACL24[:, cs], Objs_ACL24[:, cs] = \
             optim.ACL24(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Artacho, Malitsky, Tam, Torregrosa-Belén, 2023
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas = np.max(betas) * np.ones(f)
+        tau = 2 * np.random.rand()
+        m = np.random.randint(1, n - 1 + 1)
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+        betas = np.max(betas) * np.ones(m)
         Vars_AMTT23[:, cs], Objs_AMTT23[:, cs] = \
             optim.AMTT23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
         # Bredies, Chenchene, Lorenz, Naldi, 2023
-        f = np.random.randint(1, b - 1 + 1)
-        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, f, A, y)
-        betas = np.max(betas) * np.ones(f)
+        tau = 1 * np.random.rand()
+        m = np.random.randint(1, n - 1 + 1)
+        Grads, betas = st.create_Grads_hub_flat(delta_1, delta_2, m, A, y)
+        betas = np.max(betas) * np.ones(m)
         Vars_BCLN23[:, cs], Objs_BCLN23[:, cs] = \
             optim.BCLN23(Proxs, Grads, betas, w_init, maxit, tau, Model)
 
@@ -463,15 +468,15 @@ def experiment_portfolio_optimization(maxit=500):
     # reading data and obtaining operators.
     # NOTE: Turn Download=True the first time running this code. Ensure to
     # have an API for key StockData.org.
-    Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=True)
+    Proxs, Grads, betas, Model = port_opt.get_operators(4, Download=False)
 
-    b = len(Proxs)
+    n = len(Proxs)
 
     # cases
     cases = 20
 
     # initialization
-    w_init = np.zeros((b, Model.dim))
+    w_init = np.zeros((n, Model.dim))
 
     # computing optimal solution
     _, _, _, x_opt = optim.SFB_plus(Proxs, Grads, betas, w_init, 20 * maxit,
@@ -486,6 +491,8 @@ def experiment_portfolio_optimization(maxit=500):
     Dist_BCLN23 = np.zeros((maxit, cases))
 
     for cs in tqdm(range(cases)):
+
+        tau = 1 # 2 * np.random.rand()
 
         # Adapted Graph Forward Backward (aGFB). Our paper
         _, _, Dist_aGFB[:, cs], _ = \

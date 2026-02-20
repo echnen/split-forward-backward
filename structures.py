@@ -89,17 +89,17 @@ def create_grad_function_hub_flat(delta_1, delta_2, A_j, y_j):
                                                 A_j @ x - y_j), ndmin=1)
 
 
-def create_Grads_hub_flat(delta_1, delta_2, f, A, y):
+def create_Grads_hub_flat(delta_1, delta_2, m, A, y):
 
-    m, dim = A.shape
+    dim_mat, dim = A.shape
 
     # splitting the forward terms into different chunks of balanced size
-    chunks_indeces = np.array_split(np.arange(m), f)
+    chunks_indeces = np.array_split(np.arange(dim_mat), m)
 
     Grads = []
     betas = []
 
-    for j in range(f):
+    for j in range(m):
         A_j = A[chunks_indeces[j], :]
         y_j = y[chunks_indeces[j]]
 
@@ -109,7 +109,7 @@ def create_Grads_hub_flat(delta_1, delta_2, f, A, y):
     return Grads, betas
 
 
-def create_N_and_K(F, f, b, Range_N, Range_K):
+def create_N_and_K(F, m, n, Range_N, Range_K):
     '''
     NOTE: F = [0, x, y, ..., z, b] with length b. F[i] denotes the forward
     terms (possibly -- it also depends on N) activated while evaluating the
@@ -118,10 +118,10 @@ def create_N_and_K(F, f, b, Range_N, Range_K):
     N and K are sampled unformly on the interval [Range[0], Range[1]]
     '''
 
-    N = np.random.uniform(Range_N[0], Range_N[1], (b, f))
-    K = np.random.uniform(Range_K[0], Range_K[1], (f, b))
+    N = np.random.uniform(Range_N[0], Range_N[1], (n, m))
+    K = np.random.uniform(Range_K[0], Range_K[1], (m, n))
 
-    for i in range(b):
+    for i in range(n):
         N[i, F[i]:] = 0 * N[i, F[i]:]
         K[:F[i], i] = 0 * K[:F[i], i]
 
@@ -131,26 +131,26 @@ def create_N_and_K(F, f, b, Range_N, Range_K):
     return N, K
 
 
-def create_N_and_K_aGFB(f, b):
+def create_N_and_K_aGFB(m, n):
     '''
     Implements the N and K in Example REF in the paper.
     '''
 
-    maximum_forward_terms = int(b * (b - 1) / 2)
-    if f > maximum_forward_terms:
+    maximum_forward_terms = int(n * (n - 1) / 2)
+    if m > maximum_forward_terms:
         raise Exception("In Example REF, f must be lower than b * (b - 1) / 2")
 
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         # deleting some rows of N and K to match the number of forward terms
         deleting_indeces = np.random.choice(maximum_forward_terms,
-                                            size=maximum_forward_terms - f,
+                                            size=maximum_forward_terms - m,
                                             replace=False)
 
-    N = np.zeros((b, maximum_forward_terms))
-    K = np.zeros((maximum_forward_terms, b))
+    N = np.zeros((n, maximum_forward_terms))
+    K = np.zeros((maximum_forward_terms, n))
 
     i_minus = 0
-    for i in range(b):
+    for i in range(n):
         i_plus = i_minus + i
         ones_indeces = np.arange(i_minus, i_plus)
         i_minus = i_plus
@@ -161,16 +161,16 @@ def create_N_and_K_aGFB(f, b):
             K[ones_indeces, :len(ones_indeces)] = np.eye(i)
 
     # deleting excessive rows and columns
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         N = np.delete(N, deleting_indeces, axis=1)
         K = np.delete(K, deleting_indeces, axis=0)
 
     # retrieving F
     F = [0]
 
-    for i in range(1, b):
+    for i in range(1, n):
         index = 0
-        for j in range(f):
+        for j in range(m):
             if N[i, j] != 0:
                 index = j + 1
 
@@ -179,20 +179,20 @@ def create_N_and_K_aGFB(f, b):
     return N, K, F
 
 
-def create_N_and_K_optimized(F, f, b, beta_diag):
+def create_N_and_K_optimized(F, m, n, beta_diag):
     '''
     Chooses N and K to minimize 2-norm sqrt(beta_diag) * (H.T - K)
 
     beta_diag : diagonal matrix of beta-values
     '''
 
-    K = cp.Variable((f, b))
-    N = cp.Variable((b, f))
-    constraints = [K @ np.ones((b, 1)) == np.ones((f, 1)),
-                   N.T @ np.ones((b, 1)) == np.ones((f, 1))]
+    K = cp.Variable((m, n))
+    N = cp.Variable((n, m))
+    constraints = [K @ np.ones((n, 1)) == np.ones((m, 1)),
+                   N.T @ np.ones((n, 1)) == np.ones((m, 1))]
 
-    for i in range(b):
-        for j in range(f):
+    for i in range(n):
+        for j in range(m):
             if j >= F[i]:
                 constraints.append(N[i, j] == 0)
             else:
@@ -205,45 +205,45 @@ def create_N_and_K_optimized(F, f, b, beta_diag):
     return N.value, K.value
 
 
-def create_N_and_K_ACL24(f, b):
+def create_N_and_K_ACL24(m, n):
     '''
     Implements the N and K as in
 
     2024. Artacho, Campoy, Lopez-Pastor.
     '''
 
-    maximum_forward_terms = b - 1
-    if f > maximum_forward_terms:
-        raise Exception("In ACL24, f must be equal or lower than b - 1")
+    maximum_forward_terms = n - 1
+    if m > maximum_forward_terms:
+        raise Exception("In ACL24, f must be equal or lower than n - 1")
 
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         # deleting some rows of N and K to match the number of forward terms
         deleting_indeces = np.random.choice(maximum_forward_terms,
-                                            size=maximum_forward_terms - f,
+                                            size=maximum_forward_terms - m,
                                             replace=False)
 
-    N = np.zeros((b, maximum_forward_terms))
-    K = np.zeros((maximum_forward_terms, b))
+    N = np.zeros((n, maximum_forward_terms))
+    K = np.zeros((maximum_forward_terms, n))
 
-    N[1:, :] = np.eye(b - 1)
+    N[1:, :] = np.eye(n - 1)
 
     # defining K
-    for i in range(b - 1):
+    for i in range(n - 1):
         K_i = np.zeros(i + 1)
         K_i[np.random.randint(i + 1)] = 1
         K[i, :(i + 1)] = K_i
 
     # deleting excessive rows and columns
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         N = np.delete(N, deleting_indeces, axis=1)
         K = np.delete(K, deleting_indeces, axis=0)
 
     # retrieving F
     F = [0]
 
-    for i in range(1, b):
+    for i in range(1, n):
         index = 0
-        for j in range(f):
+        for j in range(m):
             if N[i, j] != 0:
                 index = j + 1
 
@@ -252,41 +252,41 @@ def create_N_and_K_ACL24(f, b):
     return N, K, F
 
 
-def create_N_and_K_AMTT23(f, b):
+def create_N_and_K_AMTT23(m, n):
     '''
     Implements the N and K as in
 
     2023. Artacho, Malitsky, Tam, Torregrosa-Belén
     '''
 
-    maximum_forward_terms = b - 1
-    if f > maximum_forward_terms:
-        raise Exception("In Example AMTT23, f must be equal or lower than" +
-                        "b - 1")
+    maximum_forward_terms = n - 1
+    if m > maximum_forward_terms:
+        raise Exception("In Example AMTT23, m must be equal or lower than" +
+                        "n - 1")
 
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         # deleting some rows of N and K to match the number of forward terms
         deleting_indeces = np.random.choice(maximum_forward_terms,
-                                            size=maximum_forward_terms - f,
+                                            size=maximum_forward_terms - m,
                                             replace=False)
 
-    N = np.zeros((b, maximum_forward_terms))
-    K = np.zeros((maximum_forward_terms, b))
+    N = np.zeros((n, maximum_forward_terms))
+    K = np.zeros((maximum_forward_terms, n))
 
-    N[1:, :] = np.eye(b - 1)
-    K[:, :-1] = np.eye(b - 1)
+    N[1:, :] = np.eye(n - 1)
+    K[:, :-1] = np.eye(n - 1)
 
     # deleting excessive rows and columns
-    if f < maximum_forward_terms:
+    if m < maximum_forward_terms:
         N = np.delete(N, deleting_indeces, axis=1)
         K = np.delete(K, deleting_indeces, axis=0)
 
     # retrieving F
     F = [0]
 
-    for i in range(1, b):
+    for i in range(1, n):
         index = 0
-        for j in range(f):
+        for j in range(m):
             if N[i, j] != 0:
                 index = j + 1
 
